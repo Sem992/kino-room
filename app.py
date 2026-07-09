@@ -336,7 +336,8 @@ if st.session_state.user_role is not None:
                                 "category": new_category,
                                 "poster_url": new_poster if new_poster else "https://via.placeholder.com/300x450?text=Нет+постера",
                                 "trailer_url": new_trailer,
-                                "description": new_description
+                                "description": new_description,
+                                "recommended": False
                             })
                             st.success(f"📺 «{new_title}» успешно добавлен!")
                             st.rerun()
