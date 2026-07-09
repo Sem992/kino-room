@@ -285,15 +285,20 @@ if st.session_state.user_role is not None:
                         is_rec = movie.get("recommended", False)
                         rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
 
+                        # Очищаем ссылку от случайных переносов строк и пробелов, чтобы HTML не ломался
+                        p_url = str(movie.get('poster_url', '')).strip().replace('\n', '').replace('\r', '')
+                        if not p_url or not p_url.startswith("http"):
+                            p_url = "https://via.placeholder.com/300x450?text=Нет+постера"
+
                         st.markdown(f"""
-                            <div class="movie-card">
-                                {rec_badge}
-                                <img src="{movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{movie['title']}</h3>
-                                <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span>
-                                {status_badge}
-                            </div>
-                        """, unsafe_allow_html=True)
+                                                    <div class="movie-card" style="position:relative; background-color:#f9f9f9; padding:15px; border-radius:10px; border:1px solid #eee; margin-bottom:15px; text-align:center;">
+                                                        {rec_badge}
+                                                        <img src="{p_url}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+                                                        <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{movie['title']}</h3>
+                                                        <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span>
+                                                        {status_badge}
+                                                    </div>
+                                                """, unsafe_allow_html=True)
 
                         if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}",
                                      use_container_width=True):
