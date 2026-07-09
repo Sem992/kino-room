@@ -322,26 +322,26 @@ if st.session_state.user_role is not None:
                 ["🎬 Добавить фильм", "🧠 Создать Вопрос Квиза", "🔔 Заявки от Кристины"])
 
             with adm_tab1:
-                with st.form("add_movie_form", clear_on_submit=True):
-                    col_form1, col_form2 = st.columns(2)
-                    with col_form1:
-                        new_title = st.text_input("🎬 Название фильма/сериала:")
-                        new_category = st.selectbox("📁 Категория:", ["Фильм", "Сериал", "Мультфильм"])
-                        new_poster = st.text_input("🖼 Ссылка на картинку постера (URL):")
-                    with col_form2:
-                        new_trailer = st.text_input("🍿 Ссылка на трейлер (YouTube):")
-                        new_description = st.text_area("📝 Краткое описание:")
+                with st.form(key="add_movie_form", clear_on_submit=True):
+                    new_title = st.text_input("🎬 Название тайтла:")
+                    new_category = st.selectbox("Тип:", ["Фильм", "Сериал", "Мультфильм"])
+                    new_poster = st.text_input("🖼️ Ссылка на постер:")
+                    new_trailer = st.text_input("🍿 Ссылка на трейлер (YouTube):")
+                    new_description = st.text_area("📝 Краткое описание:")
+
                     if st.form_submit_button("Сохранить и добавить в каталог"):
                         if new_title and new_description:
-                            save_local_movie({"title": new_title, "category": new_category,
-                                              "poster_url": new_poster if new_poster else "https://via.placeholder.com/300x450?text=Нет+постера",
-                                              "trailer_url": new_trailer, "description": new_description
+                            save_local_movie({
+                                "title": new_title,
+                                "category": new_category,
+                                "poster_url": new_poster if new_poster else "https://via.placeholder.com/300x450?text=Нет+постера",
+                                "trailer_url": new_trailer,
+                                "description": new_description
                             })
-
-                            st.success(f"🎬 «{new_title}» успешно добавлен!");
+                            st.success(f"📺 «{new_title}» успешно добавлен!")
                             st.rerun()
                         else:
-                            st.warning("Заполни Название и Описание!")
+                            st.error("Заполни хотя бы название и описание!")
 
             with adm_tab2:
                 st.markdown("#### Добавить вопрос к фильму")
