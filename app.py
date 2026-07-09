@@ -335,8 +335,8 @@ if st.session_state.user_role is not None:
                         if new_title and new_description:
                             save_local_movie({"title": new_title, "category": new_category,
                                               "poster_url": new_poster if new_poster else "https://via.placeholder.com/300x450?text=Нет+постера",
-                                              "trailer_url": new_trailer, "description": new_description,
-                                              "recommended": False})
+                                              "trailer_url": new_trailer, "description": new_description
+                            })
                             st.success(f"🎬 «{new_title}» успешно добавлен!");
                             st.rerun()
                         else:
