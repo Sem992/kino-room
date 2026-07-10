@@ -363,16 +363,24 @@ if st.session_state.user_role is not None:
                         is_rec = movie.get("recommended", False)
                         rec_badge = "<span style='background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
 
-                        # Исправлен постер в каталоге
+                        # 1. Показываем постер фильма
                         st.image(movie['poster_url'], use_container_width=True)
 
-                        st.markdown(f"""
-                            <div style="text-align: center; margin-bottom: 10px;">
-                                {rec_badge} {status_badge}
-                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{movie['title']}</h3>
-                                <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        # 2. Выводим плашки статуса (Просмотрено/В планах) и Рекомендации текстом, если они есть
+                        badges = []
+                        if is_rec:
+                            badges.append("🔥 Рекомендую")
+                        if m_status == "watched":
+                            badges.append("✅ Просмотрено")
+                        elif m_status == "watchlist":
+                            badges.append("📌 В планах")
+
+                        if badges:
+                            st.write(" | ".join(badges))
+
+                        # 3. Красиво и чисто пишем название фильма и его категорию
+                        st.markdown(f"### {movie['title']}")
+                        st.caption(f"📁 Категория: {movie['category']}")
 
                         if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}",
                                      use_container_width=True):
