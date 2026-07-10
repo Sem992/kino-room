@@ -1051,3 +1051,12 @@ if st.session_state.user_role is not None:
                             <p style="margin-top:5px; margin-bottom:0px; color:#444!important;">{rev.get('review_text', '')}</p>
                         </div>
                     """, unsafe_allow_html=True)
+# --- ФУТЕР С ТЕЛЕГРАМОМ ДЛЯ ВОПРОСОВ ---
+    st.write("---")
+    st.markdown(
+        "<p style='text-align: center; color: #888888; font-size: 13px; margin-top: 30px;'>"
+        "⚙️ Появились вопросы или что-то сломалось? Пиши в Telegram: "
+        "<a href='https://t.me/твой_ник_в_тг' target='_blank' style='color: #E50914; font-weight: bold; text-decoration: none;'>@твой_ник_в_тг</a>"
+        "</p>",
+        unsafe_allow_html=True
+)
