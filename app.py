@@ -1065,16 +1065,18 @@ if st.session_state.user_role is not None:
                         </div>
                     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # 🛠 ТЕХПОДДЕРЖКА (ФУТЕР)
-    # ==========================================
-    st.write("---")
-    _, footer_col, _ = st.columns([1, 2, 1])
-    with footer_col:
-        st.markdown("""
-            <div style="text-align: center; color: #777777; font-size: 14px; margin-top: 10px; margin-bottom: 20px;">
-                💡 Есть вопросы, пожелания или что-то не работает?<br>
-                Пиши администратору: 
-                <a href="https://t.me/SemenMag" target="_blank" style="color: #E50914; font-weight: bold; text-decoration: none;">@SemenMag</a>
-            </div>
-        """, unsafe_allow_html=True)
+# ==========================================
+# 🛠 ТЕХПОДДЕРЖКА (ФУТЕР)
+# ==========================================
+st.write("---")
+_, footer_col, _ = st.columns([1, 2, 1])
+with footer_col:
+    st.markdown("""
+        <div style="text-align: center; color: #777777; font-size: 14px; margin-top: 10px; margin-bottom: 20px;">
+            💡 Есть вопросы, пожелания или что-то не работает?<br>
+            Пиши администратору: 
+            <a href="https://t.me/SemenMag" target="_blank" style="color: #E50914; font-weight: bold; text-decoration: none;">
+                @SemenMag 🚀
+            </a>
+        </div>
+    """, unsafe_allow_html=True)
