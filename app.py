@@ -14,7 +14,6 @@ st.set_page_config(
 
 # =========================================================
 # 🔑 НАСТРОЙКИ ПОДКЛЮЧЕНИЯ К SUPABASE
-# Впиши сюда свои данные из проекта Supabase (Settings -> API)
 # =========================================================
 SUPABASE_URL = "https://cmlxeafxjgjsaotzkwbn.supabase.co"
 SUPABASE_KEY = "sb_publishable_cS46YQuO8d64KEQlS2PnHg__qFLdFcb"
@@ -86,7 +85,6 @@ def load_local_requests():
 def save_local_movie(movie_data):
     try:
         url = f"{SUPABASE_URL}/rest/v1/movies"
-        # Убираем id, так как в базе он SERIAL PRIMARY KEY и сгенерируется сам
         payload = {
             "title": movie_data.get("title"),
             "category": movie_data.get("category"),
@@ -117,11 +115,9 @@ def save_local_review(review_data):
 
 def save_local_action(username, movie_id, status):
     try:
-        # Сначала удаляем старое действие пользователя на этот же фильм, если оно было
         delete_url = f"{SUPABASE_URL}/rest/v1/user_actions?username=eq.{username}&movie_id=eq.{movie_id}"
         requests.delete(delete_url, headers=HEADERS)
 
-        # Если статус не None (то есть мы не сбрасываем его), то добавляем новую строку
         if status:
             insert_url = f"{SUPABASE_URL}/rest/v1/user_actions"
             payload = {
@@ -274,7 +270,8 @@ if st.session_state.user_role is not None:
         st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**")
         st.write("---")
 
-        page = st.radio("🧭 Навигация по сайту:", ["🏠 Главный каталог", "🔥 Семён рекомендует", "👤 Моё空间"])
+        # Исправлено "Моё空间" -> "👤 Моё пространство"
+        page = st.radio("🧭 Навигация по сайту:", ["🏠 Главный каталог", "🔥 Семён рекомендует", "👤 Моё пространство"])
         if page == "🏠 Главный каталог":
             st.session_state.nav_page = "catalog"
         elif page == "🔥 Семён рекомендует":
@@ -328,14 +325,17 @@ if st.session_state.user_role is not None:
             else:
                 rm = st.session_state.random_movie
                 st.markdown(f"""
-                    <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; gap: 15px; align-items: center;">
-                        <img src="{rm['poster_url']}" style="width: 80px; max-height: 120px; object-fit: cover; border-radius: 4px;">
-                        <div>
-                            <h4 style="margin: 0; color: #E50914;">🍿 Идеальный вариант для тебя: «{rm['title']}»</h4>
-                            <p style="margin: 5px 0 0 0; font-size: 14px;"><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>
-                        </div>
+                    <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; margin-bottom: 10px;">
+                        <h4 style="margin: 0 0 10px 0; color: #E50914;">🍿 Идеальный вариант для тебя: «{rm['title']}»</h4>
                     </div>
                 """, unsafe_allow_html=True)
+
+                # Исправлен постер в рандоме
+                st.image(rm['poster_url'], width=200)
+                st.markdown(
+                    f"<p style='font-size: 14px; margin-top:5px;'><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>",
+                    unsafe_allow_html=True)
+
                 if st.button(f"🚀 Открыть «{rm['title']}»", key="open_random_btn"):
                     st.query_params["movie_id"] = rm['id'];
                     st.rerun()
@@ -356,20 +356,21 @@ if st.session_state.user_role is not None:
                                         None)
                         status_badge = ""
                         if m_status == "watched":
-                            status_badge = "<br><span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>✅ Просмотрено</span>"
+                            status_badge = "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>✅ Просмотрено</span>"
                         elif m_status == "watchlist":
-                            status_badge = "<br><span style='background-color:#FFC107; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>📌 В планах</span>"
+                            status_badge = "<span style='background-color:#FFC107; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>📌 В планах</span>"
 
                         is_rec = movie.get("recommended", False)
-                        rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
+                        rec_badge = "<span style='background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
+
+                        # Исправлен постер в каталоге
+                        st.image(movie['poster_url'], use_container_width=True)
 
                         st.markdown(f"""
-                            <div class="movie-card">
-                                {rec_badge}
-                                <img src="{movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{movie['title']}</h3>
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                {rec_badge} {status_badge}
+                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{movie['title']}</h3>
                                 <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span>
-                                {status_badge}
                             </div>
                         """, unsafe_allow_html=True)
 
@@ -487,16 +488,17 @@ if st.session_state.user_role is not None:
                                              "id"]), None)
                         status_badge = ""
                         if m_status == "watched":
-                            status_badge = "<br><span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>✅ Просмотрено</span>"
+                            status_badge = "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>✅ Просмотрено</span>"
                         elif m_status == "watchlist":
-                            status_badge = "<br><span style='background-color:#FFC107; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>📌 В планах</span>"
+                            status_badge = "<span style='background-color:#FFC107; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>📌 В планах</span>"
 
+                        # Исправлен постер в рекомендациях
+                        st.image(r_movie['poster_url'], use_container_width=True)
                         st.markdown(f"""
-                            <div class="movie-card">
-                                <img src="{r_movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{r_movie['title']}</h3>
-                                <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{r_movie['category']}</span>
+                            <div style="text-align: center; margin-bottom: 10px;">
                                 {status_badge}
+                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{r_movie['title']}</h3>
+                                <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{r_movie['category']}</span>
                             </div>
                         """, unsafe_allow_html=True)
                         if st.button(f"Открыть «{r_movie['title']}»", key=f"rec_page_btn_{r_movie['id']}",
@@ -548,10 +550,11 @@ if st.session_state.user_role is not None:
                     w_cols = st.columns(3)
                     for w_idx, w_movie in enumerate(w_chunk):
                         with w_cols[w_idx]:
+                            # Исправлен постер
+                            st.image(w_movie['poster_url'], use_container_width=True)
                             st.markdown(f"""
-                                <div class="movie-card">
-                                    <img src="{w_movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-                                    <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{w_movie['title']}</h3>
+                                <div style="text-align: center; margin-bottom: 10px;">
+                                    <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{w_movie['title']}</h3>
                                     <span style="background-color:#28A745; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">✅ Просмотрено</span>
                                 </div>
                             """, unsafe_allow_html=True)
@@ -570,10 +573,11 @@ if st.session_state.user_role is not None:
                     wl_cols = st.columns(3)
                     for wl_idx, wl_movie in enumerate(wl_chunk):
                         with wl_cols[wl_idx]:
+                            # Исправлен постер
+                            st.image(wl_movie['poster_url'], use_container_width=True)
                             st.markdown(f"""
-                                <div class="movie-card">
-                                    <img src="{wl_movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
-                                    <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{wl_movie['title']}</h3>
+                                <div style="text-align: center; margin-bottom: 10px;">
+                                    <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{wl_movie['title']}</h3>
                                     <span style="background-color:#FFC107; color:black; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">📌 В планах</span>
                                 </div>
                             """, unsafe_allow_html=True)
@@ -934,6 +938,7 @@ if st.session_state.user_role is not None:
 
             col_view1, col_view2 = st.columns([1, 2])
             with col_view1:
+                # Исправлен постер в карточке фильма
                 st.image(movie['poster_url'], use_container_width=True)
             with col_view2:
                 st.markdown("### 📝 Описание фильма")
@@ -972,7 +977,7 @@ if st.session_state.user_role is not None:
                     if "youtube.com" in movie['trailer_url'] or "youtu.be" in movie['trailer_url']: st.video(
                         movie['trailer_url'])
                 else:
-                    st.info("Трейлер к этому фильму не добавлен.")
+                    st.info("Трейлер к этому фильм не добавлен.")
 
             st.write("---")
 
@@ -1051,18 +1056,17 @@ if st.session_state.user_role is not None:
                             <p style="margin-top:5px; margin-bottom:0px; color:#444!important;">{rev.get('review_text', '')}</p>
                         </div>
                     """, unsafe_allow_html=True)
-# ==========================================
-# 🛠 ТЕХПОДДЕРЖКА (ФУТЕР)
-# ==========================================
-st.write("---")
-_, footer_col, _ = st.columns([1, 2, 1])
-with footer_col:
-    st.markdown("""
-        <div style="text-align: center; color: #777777; font-size: 14px; margin-top: 10px; margin-bottom: 20px;">
-            💡 Есть вопросы, пожелания или что-то не работает?<br>
-            Пиши администратору: 
-            <a href="https://t.me/SemenMag" target="_blank" style="color: #E50914; font-weight: bold; text-decoration: none;">
-                @SemenMag 🚀
-            </a>
-        </div>
-    """, unsafe_allow_html=True)
+
+    # ==========================================
+    # 🛠 ТЕХПОДДЕРЖКА (ФУТЕР)
+    # ==========================================
+    st.write("---")
+    _, footer_col, _ = st.columns([1, 2, 1])
+    with footer_col:
+        st.markdown("""
+            <div style="text-align: center; color: #777777; font-size: 14px; margin-top: 10px; margin-bottom: 20px;">
+                💡 Есть вопросы, пожелания или что-то не работает?<br>
+                Пиши администратору: 
+                <a href="https://t.me/SemenMag" target="_blank" style="color: #E50914; font-weight: bold; text-decoration: none;">@SemenMag</a>
+            </div>
+        """, unsafe_allow_html=True)
