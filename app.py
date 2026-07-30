@@ -25,6 +25,11 @@ HEADERS = {
     "Prefer": "return=representation"
 }
 
+GENRE_LIST = [
+    "Все жанры", "Боевик", "Комедия", "Драма", "Фантастика",
+    "Ужасы", "Мелодрама", "Триллер", "Приключения", "Семейный", "Фэнтези"
+]
+
 
 # --- ФУНКЦИИ ДЛЯ РАБОТЫ С БАЗОЙ ДАННЫХ SUPABASE ---
 
@@ -88,12 +93,22 @@ def save_local_movie(movie_data):
         payload = {
             "title": movie_data.get("title"),
             "category": movie_data.get("category"),
+            "genre": movie_data.get("genre", "Не указан"),
+            "folder": movie_data.get("folder", ""),
             "poster_url": movie_data.get("poster_url"),
             "trailer_url": movie_data.get("trailer_url"),
             "description": movie_data.get("description"),
             "recommended": movie_data.get("recommended", False)
         }
         requests.post(url, headers=HEADERS, json=payload)
+    except:
+        pass
+
+
+def update_movie_fields(movie_id, payload):
+    try:
+        url_patch = f"{SUPABASE_URL}/rest/v1/movies?id=eq.{movie_id}"
+        requests.patch(url_patch, headers=HEADERS, json=payload)
     except:
         pass
 
@@ -211,8 +226,76 @@ st.markdown("""
     .achievement-card.earned {
         border: 1px solid #28A745; background-color: #F4FBF6;
     }
+    .user-badge {
+        font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin: 2px; display: inline-block;
+    }
+    .badge-semen { background-color: #007bff; color: white; }
+    .badge-kristina { background-color: #e83e8c; color: white; }
+    .badge-folder { background-color: #6c757d; color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
     </style>
 """, unsafe_allow_html=True)
+
+
+# Вспомогательный генератор карточек
+def render_movie_cards(movies_to_show, actions_list, is_semen_admin=False):
+    if not movies_to_show:
+        st.info("Фильмов по выбранным критериям не найдено.")
+        return
+
+    chunks = [movies_to_show[i:i + 3] for i in range(0, len(movies_to_show), 3)]
+    for chunk in chunks:
+        cols = st.columns(3)
+        for index, movie in enumerate(chunk):
+            with cols[index]:
+                semen_act = next(
+                    (a["status"] for a in actions_list if a["username"] == "Семён" and a["movie_id"] == movie["id"]),
+                    None)
+                kristina_act = next(
+                    (a["status"] for a in actions_list if a["username"] == "Кристина" and a["movie_id"] == movie["id"]),
+                    None)
+
+                semen_badge = ""
+                if semen_act == "watched":
+                    semen_badge = "<span class='user-badge badge-semen'>Семён: ✅</span>"
+                elif semen_act == "watchlist":
+                    semen_badge = "<span class='user-badge badge-semen'>Семён: 📌</span>"
+
+                kristina_badge = ""
+                if kristina_act == "watched":
+                    kristina_badge = "<span class='user-badge badge-kristina'>Кристина: ✅</span>"
+                elif kristina_act == "watchlist":
+                    kristina_badge = "<span class='user-badge badge-kristina'>Кристина: 📌</span>"
+
+                genre_str = movie.get("genre", "Не указан")
+                if not genre_str: genre_str = "Не указан"
+
+                folder_badge = ""
+                if movie.get("folder"):
+                    folder_badge = f"<br><span class='badge-folder'>📁 {movie['folder']}</span>"
+
+                is_rec = movie.get("recommended", False)
+                rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
+
+                card_html = f"""<div class="movie-card">{rec_badge}<img src="{movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;"><h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px; text-align:center;">{movie['title']}</h3><span style="background-color:#E50914; color:white; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span> <span style="background-color:#444; color:white; padding:3px 8px; border-radius:4px; font-size:12px;">{genre_str}</span>{folder_badge}<div style="margin-top:8px;">{semen_badge} {kristina_badge}</div></div>"""
+                st.markdown(card_html, unsafe_allow_html=True)
+
+                if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}_{random.randint(0, 99999)}",
+                             use_container_width=True):
+                    st.query_params["movie_id"] = movie['id']
+                    st.rerun()
+
+                if is_semen_admin:
+                    if is_rec:
+                        if st.button("❌ Убрать из рекомендаций", key=f"rem_rec_{movie['id']}",
+                                     use_container_width=True):
+                            update_movie_fields(movie['id'], {"recommended": False})
+                            st.rerun()
+                    else:
+                        if st.button("⭐️ Сделать рекомендованным", key=f"add_rec_{movie['id']}",
+                                     use_container_width=True):
+                            update_movie_fields(movie['id'], {"recommended": True})
+                            st.rerun()
+
 
 # ==========================================
 # 🔐 ЭКРАН ВХОДА
@@ -229,11 +312,11 @@ if st.session_state.user_role is None:
         btn_col1, btn_col2 = st.columns(2)
         with btn_col1:
             if st.button("🕶 Семён (Админ)", use_container_width=True):
-                st.session_state.login_target = "Семён";
+                st.session_state.login_target = "Семён"
                 st.rerun()
         with btn_col2:
             if st.button("🍿 Кристина", use_container_width=True):
-                st.session_state.user_role = "Кристина";
+                st.session_state.user_role = "Кристина"
                 st.rerun()
 
         if st.session_state.login_target == "Семён":
@@ -242,7 +325,7 @@ if st.session_state.user_role is None:
             if st.button("Войти как Администратор"):
                 if password == "0105":
                     st.session_state.user_role = "Семён"
-                    st.success("Доступ разрешен!");
+                    st.success("Доступ разрешен!")
                     st.rerun()
                 else:
                     st.error("Неверный пароль!")
@@ -266,14 +349,23 @@ if st.session_state.user_role is not None:
                           a["username"] == st.session_state.user_role and a["status"] == "watchlist"]
     user_watchlist = len(user_watchlist_ids)
 
+    kristina_watchlist_ids = [a["movie_id"] for a in actions_list if
+                              a["username"] == "Кристина" and a["status"] == "watchlist"]
+
     with st.sidebar:
         st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**")
         st.write("---")
 
-        # Исправлено "Моё空间" -> "👤 Моё пространство"
-        page = st.radio("🧭 Навигация по сайту:", ["🏠 Главный каталог", "🔥 Семён рекомендует", "👤 Моё пространство"])
-        if page == "🏠 Главный каталог":
+        page = st.radio("🧭 Навигация по сайту:", [
+            "🏠 Общий каталог",
+            "🍿 Кинотеатр Кристины",
+            "🔥 Семён рекомендует",
+            "👤 Моё пространство"
+        ])
+        if page == "🏠 Общий каталог":
             st.session_state.nav_page = "catalog"
+        elif page == "🍿 Кинотеатр Кристины":
+            st.session_state.nav_page = "kristina_cinema"
         elif page == "🔥 Семён рекомендует":
             st.session_state.nav_page = "semen_recommend"
         else:
@@ -281,132 +373,60 @@ if st.session_state.user_role is not None:
 
         st.write("---")
         if st.button("🚪 Выйти из аккаунта", use_container_width=True):
-            st.session_state.user_role = None;
+            st.session_state.user_role = None
             st.session_state.login_target = None
-            st.session_state.nav_page = "catalog";
-            st.query_params.clear();
+            st.session_state.nav_page = "catalog"
+            st.query_params.clear()
             st.rerun()
 
     if "movie_id" not in st.query_params:
         st.session_state.current_page = st.session_state.nav_page
 
-    # --- СТРАНИЦА КАТАЛОГА ---
+    # --- СТРАНИЦА: ОБЩИЙ КАТАЛОГ ---
     if st.session_state.current_page == "catalog":
-        st.markdown("<h1 style='margin-bottom: 0px;'>🎬 Кино Room</h1>", unsafe_allow_html=True)
-        st.write(f"Рады видеть тебя, {st.session_state.user_role}! Время выбрать хорошее кино.")
+        st.markdown("<h1 style='margin-bottom: 0px;'>🎬 Общий каталог</h1>", unsafe_allow_html=True)
+        st.write(f"Добро пожаловать в коллекцию всех фильмов, сериалов и мультфильмов!")
 
         st.markdown(f"""
             <div class="stats-box-new">
                 <span style="font-weight: bold; font-size: 15px; color: #2B2B2B;">📊 Прогресс просмотра:</span> 
-                <span style="color: #E50914; font-weight: 800; font-size: 15px; margin-left: 5px;">🎬 Просмотрено {user_watched} из {total_movies} тайтлов</span>
+                <span style="color: #E50914; font-weight: 800; font-size: 15px; margin-left: 5px;">🎬 Просмотрено тобой {user_watched} из {total_movies} тайтлов</span>
             </div>
         """, unsafe_allow_html=True)
 
         st.write("---")
-        st.markdown("### 🎲 Не знаешь что глянуть?")
-        col_r1, col_r2 = st.columns([1, 2])
-        with col_r1:
-            random_filter = st.selectbox("Категория рандома:", ["Всё", "Фильм", "Сериал", "Мультфильм"])
-        with col_r2:
-            st.write(" ")
-            if st.button("✨ Сёма, выбери за меня!", use_container_width=True):
-                unwatched_movies = [m for m in movies_list if m["id"] not in user_watched_ids]
-                if random_filter != "Всё":
-                    unwatched_movies = [m for m in unwatched_movies if m["category"] == random_filter]
+        st.markdown("### 🔎 Фильтры каталога")
 
-                if unwatched_movies:
-                    st.session_state.random_movie = random.choice(unwatched_movies)
-                else:
-                    st.session_state.random_movie = "empty"
+        all_folders = list(set([m.get("folder") for m in movies_list if m.get("folder")]))
+        all_folders.sort()
 
-        if st.session_state.random_movie:
-            if st.session_state.random_movie == "empty":
-                st.info("Ты посмотрела вообще всё в этой категории! Семён, пора добавить новинок!")
-            else:
-                rm = st.session_state.random_movie
-                st.markdown(f"""
-                    <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; margin-bottom: 10px;">
-                        <h4 style="margin: 0 0 10px 0; color: #E50914;">🍿 Идеальный вариант для тебя: «{rm['title']}»</h4>
-                    </div>
-                """, unsafe_allow_html=True)
+        f_col1, f_col2, f_col3 = st.columns(3)
+        with f_col1:
+            filter_cat = st.selectbox("Тип:", ["Все", "Фильм", "Сериал", "Мультфильм"], key="cat_filter_gen")
+        with f_col2:
+            filter_genre = st.selectbox("Жанр:", GENRE_LIST, key="genre_filter_gen")
+        with f_col3:
+            filter_folder = st.selectbox("Папка / Серия:", ["Все папки"] + all_folders, key="folder_filter_gen")
 
-                # Исправлен постер в рандоме
-                st.image(rm['poster_url'], width=200)
-                st.markdown(
-                    f"<p style='font-size: 14px; margin-top:5px;'><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>",
-                    unsafe_allow_html=True)
-
-                if st.button(f"🚀 Открыть «{rm['title']}»", key="open_random_btn"):
-                    st.query_params["movie_id"] = rm['id'];
-                    st.rerun()
+        filtered_movies = movies_list
+        if filter_cat != "Все":
+            filtered_movies = [m for m in filtered_movies if m.get("category") == filter_cat]
+        if filter_genre != "Все жанры":
+            filtered_movies = [m for m in filtered_movies if m.get("genre") == filter_genre]
+        if filter_folder != "Все папки":
+            filtered_movies = [m for m in filtered_movies if m.get("folder") == filter_folder]
 
         st.write("---")
-        st.subheader("🍿 Наш Каталог")
+        render_movie_cards(filtered_movies, actions_list, is_semen_admin=(st.session_state.user_role == "Семён"))
 
-        if not movies_list:
-            st.info("Каталог пока пуст.")
-        else:
-            chunks = [movies_list[i:i + 3] for i in range(0, len(movies_list), 3)]
-            for chunk in chunks:
-                cols = st.columns(3)
-                for index, movie in enumerate(chunk):
-                    with cols[index]:
-                        m_status = next((a["status"] for a in actions_list if
-                                         a["username"] == st.session_state.user_role and a["movie_id"] == movie["id"]),
-                                        None)
-                        status_badge = ""
-                        if m_status == "watched":
-                            status_badge = "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>✅ Просмотрено</span>"
-                        elif m_status == "watchlist":
-                            status_badge = "<span style='background-color:#FFC107; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>📌 В планах</span>"
-
-                        is_rec = movie.get("recommended", False)
-                        rec_badge = "<span style='background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
-
-                        # 1. Показываем постер фильма
-                        st.image(movie['poster_url'], use_container_width=True)
-
-                        # 2. Выводим плашки статуса (Просмотрено/В планах) и Рекомендации текстом, если они есть
-                        badges = []
-                        if is_rec:
-                            badges.append("🔥 Рекомендую")
-                        if m_status == "watched":
-                            badges.append("✅ Просмотрено")
-                        elif m_status == "watchlist":
-                            badges.append("📌 В планах")
-
-                        if badges:
-                            st.write(" | ".join(badges))
-
-                        # 3. Красиво и чисто пишем название фильма и его категорию
-                        st.markdown(f"### {movie['title']}")
-                        st.caption(f"📁 Категория: {movie['category']}")
-
-                        if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}",
-                                     use_container_width=True):
-                            st.query_params["movie_id"] = movie['id'];
-                            st.rerun()
-
-                        if st.session_state.user_role == "Семён":
-                            if is_rec:
-                                if st.button("❌ Убрать из рекомендаций", key=f"rem_rec_{movie['id']}",
-                                             use_container_width=True):
-                                    url_patch = f"{SUPABASE_URL}/rest/v1/movies?id=eq.{movie['id']}"
-                                    requests.patch(url_patch, headers=HEADERS, json={"recommended": False})
-                                    st.rerun()
-                            else:
-                                if st.button("⭐️ Сделать рекомендованным", key=f"add_rec_{movie['id']}",
-                                             use_container_width=True):
-                                    url_patch = f"{SUPABASE_URL}/rest/v1/movies?id=eq.{movie['id']}"
-                                    requests.patch(url_patch, headers=HEADERS, json={"recommended": True})
-                                    st.rerun()
-
-        # --- ПАНЕЛЬ СЕМЁНА ---
+        # --- ПАНЕЛЬ СЕМЁНА (АДМИНКА) ---
         if st.session_state.user_role == "Семён":
             st.write("---")
             st.markdown("### 🛠 Панель Семёна (Управление системой)")
-            adm_tab1, adm_tab2, adm_tab3 = st.tabs(
-                ["🎬 Добавить фильм", "🧠 Создать Вопрос Квиза", "🔔 Заявки от Кристины"])
+            adm_tab1, adm_tab2, adm_tab3, adm_tab4 = st.tabs(
+                ["🎬 Добавить / Настроить фильм", "🧠 Создать Вопрос Квиза", "🔔 Заявки от Кристины",
+                 "📁 Группировка фильмов в папки"]
+            )
 
             with adm_tab1:
                 with st.form("add_movie_form", clear_on_submit=True):
@@ -414,17 +434,25 @@ if st.session_state.user_role is not None:
                     with col_form1:
                         new_title = st.text_input("🎬 Название фильма/сериала:")
                         new_category = st.selectbox("📁 Категория:", ["Фильм", "Сериал", "Мультфильм"])
-                        new_poster = st.text_input("🖼 Ссылка на картинку постера (URL):")
+                        new_genre = st.selectbox("🎭 Жанр:", GENRE_LIST[1:])
+                        new_folder = st.text_input("📁 Папка / Франшиза (например: Звездные войны):")
                     with col_form2:
+                        new_poster = st.text_input("🖼 Ссылка на картинку постера (URL):")
                         new_trailer = st.text_input("🍿 Ссылка на трейлер (YouTube):")
                         new_description = st.text_area("📝 Краткое описание:")
                     if st.form_submit_button("Сохранить и добавить в каталог"):
                         if new_title and new_description:
-                            save_local_movie({"title": new_title, "category": new_category,
-                                              "poster_url": new_poster if new_poster else "https://via.placeholder.com/300x450?text=Нет+постера",
-                                              "trailer_url": new_trailer, "description": new_description,
-                                              "recommended": False})
-                            st.success(f"🎬 «{new_title}» успешно добавлен!");
+                            save_local_movie({
+                                "title": new_title,
+                                "category": new_category,
+                                "genre": new_genre,
+                                "folder": new_folder.strip(),
+                                "poster_url": new_poster if new_poster else "https://via.placeholder.com/300x450?text=Нет+постера",
+                                "trailer_url": new_trailer,
+                                "description": new_description,
+                                "recommended": False
+                            })
+                            st.success(f"🎬 «{new_title}» успешно добавлен!")
                             st.rerun()
                         else:
                             st.warning("Заполни Название и Описание!")
@@ -454,7 +482,7 @@ if st.session_state.user_role is not None:
                                     "correct": correct_ans
                                 }
                                 requests.post(url_quiz, headers=HEADERS, json=payload_quiz)
-                                st.success("🧠 Вопрос успешно добавлен в базу данных квизов!");
+                                st.success("🧠 Вопрос успешно добавлен в базу данных квизов!")
                                 st.rerun()
                             except:
                                 st.error("Ошибка сохранения квиза!")
@@ -476,43 +504,103 @@ if st.session_state.user_role is not None:
                                 requests.delete(url_del_req, headers=HEADERS)
                                 st.rerun()
 
-    # --- РАЗДЕЛ СЕМЁН РЕКОМЕНДУЕТ ---
+            with adm_tab4:
+                st.markdown("#### 📁 Управление папками / франшизами")
+                if not movies_list:
+                    st.info("Фильмов пока нет.")
+                else:
+                    target_m_title = st.selectbox("Выбери фильм для назначении папки:",
+                                                  [m["title"] for m in movies_list], key="fold_m_sel")
+                    target_m = next(m for m in movies_list if m["title"] == target_m_title)
+
+                    edit_folder = st.text_input("Имя папки/серии (оставь пустым чтобы убрать из папки):",
+                                                value=target_m.get("folder", ""))
+                    edit_genre = st.selectbox("Изменить жанр:", GENRE_LIST[1:],
+                                              index=GENRE_LIST[1:].index(target_m.get("genre")) if target_m.get(
+                                                  "genre") in GENRE_LIST[1:] else 0)
+
+                    if st.button("💾 Сохранить изменения фильма"):
+                        update_movie_fields(target_m["id"], {"folder": edit_folder.strip(), "genre": edit_genre})
+                        st.success("Обновлено!")
+                        st.rerun()
+
+    # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
+    elif st.session_state.current_page == "kristina_cinema":
+        st.markdown("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>", unsafe_allow_html=True)
+        st.write("Персональная подборка тайтлов, отложенных Кристиной в планах на просмотр!")
+
+        kristina_movies = [m for m in movies_list if m["id"] in kristina_watchlist_ids]
+
+        st.write("---")
+        st.markdown("### 🎲 Сёма, выбери за меня!")
+        col_r1, col_r2 = st.columns([1, 2])
+        with col_r1:
+            random_filter = st.selectbox("Категория рандома:", ["Всё", "Фильм", "Сериал", "Мультфильм"],
+                                         key="kr_rand_cat")
+        with col_r2:
+            st.write(" ")
+            if st.button("✨ Сёма, выбери за меня!", use_container_width=True, key="kr_rand_btn"):
+                unwatched_kristina = [m for m in kristina_movies if m["id"] not in user_watched_ids]
+                if random_filter != "Всё":
+                    unwatched_kristina = [m for m in unwatched_kristina if m["category"] == random_filter]
+
+                if unwatched_kristina:
+                    st.session_state.random_movie = random.choice(unwatched_kristina)
+                else:
+                    st.session_state.random_movie = "empty"
+
+        if st.session_state.random_movie:
+            if st.session_state.random_movie == "empty":
+                st.info(
+                    "Кристина, тут просмотрено вообще всё в этой категории! Время попросить Сёму добавить новенького!")
+            else:
+                rm = st.session_state.random_movie
+                st.markdown(f"""
+                    <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; gap: 15px; align-items: center;">
+                        <img src="{rm['poster_url']}" style="width: 80px; max-height: 120px; object-fit: cover; border-radius: 4px;">
+                        <div>
+                            <h4 style="margin: 0; color: #E50914;">🍿 Идеальный вариант для тебя: «{rm['title']}»</h4>
+                            <p style="margin: 5px 0 0 0; font-size: 14px;"><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"🚀 Открыть «{rm['title']}»", key="open_random_btn_kr"):
+                    st.query_params["movie_id"] = rm['id']
+                    st.rerun()
+
+        st.write("---")
+        st.markdown("### 🔎 Фильтры списка Кристины")
+
+        kr_folders = list(set([m.get("folder") for m in kristina_movies if m.get("folder")]))
+        kr_folders.sort()
+
+        fk_col1, fk_col2, fk_col3 = st.columns(3)
+        with fk_col1:
+            kr_cat = st.selectbox("Тип:", ["Все", "Фильм", "Сериал", "Мультфильм"], key="cat_filter_kr")
+        with fk_col2:
+            kr_genre = st.selectbox("Жанр:", GENRE_LIST, key="genre_filter_kr")
+        with fk_col3:
+            kr_folder = st.selectbox("Папка / Серия:", ["Все папки"] + kr_folders, key="folder_filter_kr")
+
+        filtered_kr = kristina_movies
+        if kr_cat != "Все":
+            filtered_kr = [m for m in filtered_kr if m.get("category") == kr_cat]
+        if kr_genre != "Все жанры":
+            filtered_kr = [m for m in filtered_kr if m.get("genre") == kr_genre]
+        if kr_folder != "Все папки":
+            filtered_kr = [m for m in filtered_kr if m.get("folder") == kr_folder]
+
+        st.write("---")
+        render_movie_cards(filtered_kr, actions_list, is_semen_admin=(st.session_state.user_role == "Семён"))
+
+    # --- РАЗДЕЛ: СЕМЁН РЕКОМЕНДУЕТ ---
     elif st.session_state.current_page == "semen_recommend":
         st.markdown("<h1>🔥 Семён рекомендует</h1>", unsafe_allow_html=True)
         st.write("Специальный топчик тайтлов, подобранный Сёмой для первоочередного просмотра! 🍿")
         st.write("---")
 
         rec_movies = [m for m in movies_list if m.get("recommended", False)]
-        if not rec_movies:
-            st.info("Семён пока не добавил сюда ни одного фильма. Но скоро здесь будет жарко!")
-        else:
-            r_chunks = [rec_movies[i:i + 3] for i in range(0, len(rec_movies), 3)]
-            for r_chunk in r_chunks:
-                r_cols = st.columns(3)
-                for r_idx, r_movie in enumerate(r_chunk):
-                    with r_cols[r_idx]:
-                        m_status = next((a["status"] for a in actions_list if
-                                         a["username"] == st.session_state.user_role and a["movie_id"] == r_movie[
-                                             "id"]), None)
-                        status_badge = ""
-                        if m_status == "watched":
-                            status_badge = "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>✅ Просмотрено</span>"
-                        elif m_status == "watchlist":
-                            status_badge = "<span style='background-color:#FFC107; color:black; padding:2px 6px; border-radius:4px; font-size:11px;'>📌 В планах</span>"
-
-                        # Исправлен постер в рекомендациях
-                        st.image(r_movie['poster_url'], use_container_width=True)
-                        st.markdown(f"""
-                            <div style="text-align: center; margin-bottom: 10px;">
-                                {status_badge}
-                                <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{r_movie['title']}</h3>
-                                <span style="background-color:#E50914; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{r_movie['category']}</span>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        if st.button(f"Открыть «{r_movie['title']}»", key=f"rec_page_btn_{r_movie['id']}",
-                                     use_container_width=True):
-                            st.query_params["movie_id"] = r_movie['id'];
-                            st.rerun()
+        render_movie_cards(rec_movies, actions_list, is_semen_admin=(st.session_state.user_role == "Семён"))
 
     # --- МОЁ ПРОСТРАНСТВО С АЧИВКАМИ ---
     elif st.session_state.current_page == "my_space":
@@ -535,7 +623,7 @@ if st.session_state.user_role is not None:
                         try:
                             url_req = f"{SUPABASE_URL}/rest/v1/requests"
                             requests.post(url_req, headers=HEADERS, json={"title": req_title.strip()})
-                            st.success("Заявка улетела Сёме! 😉");
+                            st.success("Заявка улетела Сёме! 😉")
                             st.rerun()
                         except:
                             st.error("Ошибка отправки заявки.")
@@ -550,49 +638,11 @@ if st.session_state.user_role is not None:
 
         with tab_watched:
             watched_movies = [m for m in movies_list if m["id"] in user_watched_ids]
-            if not watched_movies:
-                st.info("У тебя пока нет просмотренных фильмов.")
-            else:
-                w_chunks = [watched_movies[i:i + 3] for i in range(0, len(watched_movies), 3)]
-                for w_chunk in w_chunks:
-                    w_cols = st.columns(3)
-                    for w_idx, w_movie in enumerate(w_chunk):
-                        with w_cols[w_idx]:
-                            # Исправлен постер
-                            st.image(w_movie['poster_url'], use_container_width=True)
-                            st.markdown(f"""
-                                <div style="text-align: center; margin-bottom: 10px;">
-                                    <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{w_movie['title']}</h3>
-                                    <span style="background-color:#28A745; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">✅ Просмотрено</span>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            if st.button(f"Открыть фильм «{w_movie['title']}»", key=f"my_wat_{w_movie['id']}",
-                                         use_container_width=True):
-                                st.query_params["movie_id"] = w_movie['id'];
-                                st.rerun()
+            render_movie_cards(watched_movies, actions_list, is_semen_admin=False)
 
         with tab_watchlist:
             wish_movies = [m for m in movies_list if m["id"] in user_watchlist_ids]
-            if not wish_movies:
-                st.info("Твой список 'Хочу посмотреть' пуст.")
-            else:
-                wl_chunks = [wish_movies[i:i + 3] for i in range(0, len(wish_movies), 3)]
-                for wl_chunk in wl_chunks:
-                    wl_cols = st.columns(3)
-                    for wl_idx, wl_movie in enumerate(wl_chunk):
-                        with wl_cols[wl_idx]:
-                            # Исправлен постер
-                            st.image(wl_movie['poster_url'], use_container_width=True)
-                            st.markdown(f"""
-                                <div style="text-align: center; margin-bottom: 10px;">
-                                    <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:20px;">{wl_movie['title']}</h3>
-                                    <span style="background-color:#FFC107; color:black; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">📌 В планах</span>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            if st.button(f"Открыть фильм «{wl_movie['title']}»", key=f"my_wish_{wl_movie['id']}",
-                                         use_container_width=True):
-                                st.query_params["movie_id"] = wl_movie['id'];
-                                st.rerun()
+            render_movie_cards(wish_movies, actions_list, is_semen_admin=False)
 
         with tab_ratings:
             user_revs = [r for r in reviews_list if r["username"] == st.session_state.user_role]
@@ -647,7 +697,6 @@ if st.session_state.user_role is not None:
             cnt_rev_total = len(reviewed_objs)
 
             achievements_config = [
-                # ПОСМОТРЕНО ФИЛЬМЫ
                 {"target": 1, "cur": cnt_watch_film, "name": "Первый сеанс", "desc": "Посмотреть 1 фильм",
                  "emoji": "🎥"},
                 {"target": 3, "cur": cnt_watch_film, "name": "«Зритель с дивана»", "desc": "Посмотреть 3 фильма",
@@ -667,7 +716,6 @@ if st.session_state.user_role is not None:
                 {"target": 30, "cur": cnt_watch_film, "name": "Легенда кинозала", "desc": "Посмотреть 30 фильмов",
                  "emoji": "👑"},
 
-                # ПОСМОТРЕНО СЕРИАЛЫ
                 {"target": 1, "cur": cnt_watch_serial, "name": "«Пилотный эпизод»", "desc": "Посмотреть 1 сериал",
                  "emoji": "📺"},
                 {"target": 3, "cur": cnt_watch_serial, "name": "Ещё одну и спать", "desc": "Посмотреть 3 сериала",
@@ -681,7 +729,6 @@ if st.session_state.user_role is not None:
                 {"target": 15, "cur": cnt_watch_serial, "name": "«Королева сезонов»", "desc": "Посмотреть 15 сериалов",
                  "emoji": "💅"},
 
-                # ПОСМОТРЕНО МУЛЬТФИЛЬМЫ
                 {"target": 1, "cur": cnt_watch_mult, "name": "Возвращение в детство", "desc": "Посмотреть 1 мультфильм",
                  "emoji": "🧸"},
                 {"target": 3, "cur": cnt_watch_mult, "name": "Друг мультгероев", "desc": "Посмотреть 3 мультфильма",
@@ -701,7 +748,6 @@ if st.session_state.user_role is not None:
                 {"target": 30, "cur": cnt_watch_mult, "name": "Повелитель рисовки",
                  "desc": "Посмотреть 30 мультфильмов", "emoji": "🔮"},
 
-                # ПОСМОТРЕНО ВСЕГО ТАЙТЛОВ
                 {"target": 5, "cur": cnt_watch_total, "name": "«Киномарафонец»", "desc": "Посмотреть 5 тайтлов",
                  "emoji": "🧭"},
                 {"target": 7, "cur": cnt_watch_total, "name": "«Кинолюбитель»", "desc": "Посмотреть 7 тайтлов",
@@ -729,7 +775,6 @@ if st.session_state.user_role is not None:
                 {"target": 60, "cur": cnt_watch_total, "name": "«Властелин кинематографа»",
                  "desc": "Посмотреть 60 тайтлов", "emoji": "🧝‍♂️"},
 
-                # ОЦЕНЕНО ФИЛЬМЫ
                 {"target": 1, "cur": cnt_rate_film, "name": "«Первый вердикт»", "desc": "Оценить 1 фильм",
                  "emoji": "⚖️"},
                 {"target": 3, "cur": cnt_rate_film, "name": "Уже есть мнение", "desc": "Оценить 3 фильма",
@@ -748,7 +793,6 @@ if st.session_state.user_role is not None:
                 {"target": 30, "cur": cnt_rate_film, "name": "«Властелин кинематографа»", "desc": "Оценить 30 фильмов",
                  "emoji": "🌋"},
 
-                # ОЦЕНЕНО СЕРИАЛЫ
                 {"target": 1, "cur": cnt_rate_serial, "name": "Первый вердикт (Сериалы)", "desc": "Оценить 1 сериал",
                  "emoji": "⏳"},
                 {"target": 3, "cur": cnt_rate_serial, "name": "«Сверхзритель»", "desc": "Оценить 3 сериала",
@@ -762,7 +806,6 @@ if st.session_state.user_role is not None:
                 {"target": 15, "cur": cnt_rate_serial, "name": "Судья Netflix", "desc": "Оценить 15 сериалов",
                  "emoji": "🔴"},
 
-                # ОЦЕНЕНО МУЛЬТФИЛЬМЫ
                 {"target": 1, "cur": cnt_rate_mult, "name": "Первое мнение", "desc": "Оценить 1 мультфильм",
                  "emoji": "👶"},
                 {"target": 3, "cur": cnt_rate_mult, "name": "Добрый критик", "desc": "Оценить 3 мультфильма",
@@ -782,7 +825,6 @@ if st.session_state.user_role is not None:
                 {"target": 30, "cur": cnt_rate_mult, "name": "Легендарный судья анимации",
                  "desc": "Оценить 30 мультфильмов", "emoji": "🐉"},
 
-                # ОЦЕНЕНО ВСЕГО ТАЙТЛОВ
                 {"target": 5, "cur": cnt_rate_total, "name": "Младший оценщик", "desc": "Оценить 5 тайтлов",
                  "emoji": "🌱"},
                 {"target": 7, "cur": cnt_rate_total, "name": "Есть что сказать", "desc": "Оценить 7 тайтлов",
@@ -810,7 +852,6 @@ if st.session_state.user_role is not None:
                 {"target": 60, "cur": cnt_rate_total, "name": "Верховный суд кино", "desc": "Оценить 60 тайтлов",
                  "emoji": "🦅"},
 
-                # РЕЦЕНЗИИ ФИЛЬМЫ
                 {"target": 1, "cur": cnt_rev_film, "name": "«Первое слово»", "desc": "Написать рецензию на 1 фильм",
                  "emoji": "✏️"},
                 {"target": 3, "cur": cnt_rev_film, "name": "«Критик-любитель»", "desc": "Написать рецензию на 3 фильма",
@@ -830,7 +871,6 @@ if st.session_state.user_role is not None:
                 {"target": 30, "cur": cnt_rev_film, "name": "Гений мысли", "desc": "Написать рецензию на 30 фильмов",
                  "emoji": "💡"},
 
-                # РЕЦЕНЗИИ СЕРИАЛЫ
                 {"target": 1, "cur": cnt_rev_serial, "name": "Первая заметка", "desc": "Написать рецензию на 1 сериал",
                  "emoji": "📓"},
                 {"target": 3, "cur": cnt_rev_serial, "name": "Обзорщик сезонов",
@@ -844,7 +884,6 @@ if st.session_state.user_role is not None:
                 {"target": 15, "cur": cnt_rev_serial, "name": "Повелитель обзоров",
                  "desc": "Написать рецензию на 15 сериалов", "emoji": "👑"},
 
-                # РЕЦЕНЗИИ МУЛЬТФИЛЬМЫ
                 {"target": 1, "cur": cnt_rev_mult, "name": "Первое впечатление",
                  "desc": "Написать рецензию на 1 мультфильм", "emoji": "✨"},
                 {"target": 3, "cur": cnt_rev_mult, "name": "Автор волшебных строк",
@@ -864,7 +903,6 @@ if st.session_state.user_role is not None:
                 {"target": 30, "cur": cnt_rev_mult, "name": "Легенда анимации",
                  "desc": "Написать рецензию на 30 мультфильмов", "emoji": "🐉"},
 
-                # РЕЦЕНЗИИ ВСЕГО ТАЙТЛОВ
                 {"target": 5, "cur": cnt_rev_total, "name": "Начинающий автор",
                  "desc": "Написать рецензию на 5 тайтлов", "emoji": "✍️"},
                 {"target": 7, "cur": cnt_rev_total, "name": "Любитель обзоров",
@@ -937,7 +975,7 @@ if st.session_state.user_role is not None:
 
         if movie:
             if st.button("⬅️ НАЗАД В КАТАЛОГ ФИЛЬМОВ", use_container_width=True):
-                st.query_params.clear();
+                st.query_params.clear()
                 st.rerun()
 
             st.write("---")
@@ -946,11 +984,16 @@ if st.session_state.user_role is not None:
 
             col_view1, col_view2 = st.columns([1, 2])
             with col_view1:
-                # Исправлен постер в карточке фильма
                 st.image(movie['poster_url'], use_container_width=True)
             with col_view2:
                 st.markdown("### 📝 Описание фильма")
                 st.write(movie['description'])
+
+                st.markdown(f"**Категория:** {movie.get('category', 'Не указана')}")
+                st.markdown(f"**Жанр:** {movie.get('genre', 'Не указан')}")
+                if movie.get('folder'):
+                    st.markdown(f"**Франшиза / Папка:** 📁 {movie.get('folder')}")
+
                 st.write("---")
 
                 st.markdown("### 🎯 Твой статус фильма")
@@ -964,28 +1007,28 @@ if st.session_state.user_role is not None:
                         st.success("✅ Просмотрено тобой")
                     else:
                         if st.button("🎬 Отметить просмотренным", use_container_width=True):
-                            save_local_action(st.session_state.user_role, movie["id"], "watched");
+                            save_local_action(st.session_state.user_role, movie["id"], "watched")
                             st.rerun()
                 with col_btn2:
                     if current_status == "watchlist":
                         st.warning("📌 В планах на просмотр")
                     else:
                         if st.button("📌 Хочу посмотреть", use_container_width=True):
-                            save_local_action(st.session_state.user_role, movie["id"], "watchlist");
+                            save_local_action(st.session_state.user_role, movie["id"], "watchlist")
                             st.rerun()
                 with col_btn3:
                     if current_status:
                         if st.button("❌ Сбросить статус", use_container_width=True):
-                            save_local_action(st.session_state.user_role, movie["id"], None);
+                            save_local_action(st.session_state.user_role, movie["id"], None)
                             st.rerun()
 
                 st.write("---")
                 if movie['trailer_url']:
                     st.markdown(f"### 🍿 [Смотреть трейлер на YouTube]({movie['trailer_url']})")
-                    if "youtube.com" in movie['trailer_url'] or "youtu.be" in movie['trailer_url']: st.video(
-                        movie['trailer_url'])
+                    if "youtube.com" in movie['trailer_url'] or "youtu.be" in movie['trailer_url']:
+                        st.video(movie['trailer_url'])
                 else:
-                    st.info("Трейлер к этому фильм не добавлен.")
+                    st.info("Трейлер к этому фильму не добавлен.")
 
             st.write("---")
 
@@ -1007,7 +1050,7 @@ if st.session_state.user_role is not None:
                 save_local_review({"movie_id": movie["id"], "username": st.session_state.user_role, "rating": rating,
                                    "vibe": selected_vibe, "review_text": review_text})
                 save_local_action(st.session_state.user_role, movie["id"], "watched")
-                st.success("Рецензия успешно сохранена!");
+                st.success("Рецензия успешно сохранена!")
                 st.rerun()
 
             # --- ТЕСТЫ ПОД ОТЗЫВАМИ В КАРТОЧКЕ ФИЛЬМА ---
