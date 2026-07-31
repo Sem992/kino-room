@@ -42,6 +42,7 @@ def load_local_movies():
     except:
         return []
 
+
 @st.cache_data(ttl=5)
 def load_local_reviews():
     try:
@@ -50,6 +51,7 @@ def load_local_reviews():
         return response.json() if response.status_code == 200 else []
     except:
         return []
+
 
 @st.cache_data(ttl=5)
 def load_local_actions():
@@ -60,6 +62,7 @@ def load_local_actions():
     except:
         return []
 
+
 @st.cache_data(ttl=5)
 def load_local_quizzes():
     try:
@@ -69,6 +72,7 @@ def load_local_quizzes():
     except:
         return []
 
+
 @st.cache_data(ttl=5)
 def load_local_quiz_results():
     try:
@@ -77,6 +81,7 @@ def load_local_quiz_results():
         return response.json() if response.status_code == 200 else []
     except:
         return []
+
 
 @st.cache_data(ttl=5)
 def load_local_requests():
@@ -112,8 +117,7 @@ def save_local_review(review_data):
     try:
         movie_id = review_data.get("movie_id")
         username = review_data.get("username")
-        
-        # Удаляем предыдущую рецензию пользователя на этот фильм
+
         del_url = f"{SUPABASE_URL}/rest/v1/reviews?username=eq.{username}&movie_id=eq.{movie_id}"
         requests.delete(del_url, headers=HEADERS)
 
@@ -163,12 +167,21 @@ else:
     st.session_state.selected_movie_id = None
     st.session_state.current_page = st.session_state.nav_page
 
-
 # 2. Кастомный CSS стиль
 st.markdown("""
     <style>
     .stApp { background-color: #FAFAFA; color: #2B2B2B; }
     [data-testid="stSidebar"] { background-color: #F8F9FA; border-right: 1px solid #E0E0E0; }
+
+    /* Перевод плейсхолдера multiselect на русский */
+    div[data-baseweb="select"] span[data-class="placeholder"] {
+        font-size: 0 !important;
+    }
+    div[data-baseweb="select"] span[data-class="placeholder"]::after {
+        content: "Выберите варианты..." !important;
+        font-size: 14px !important;
+        color: #757575 !important;
+    }
 
     /* Кнопки */
     div.stButton > button {
@@ -198,6 +211,7 @@ st.markdown("""
 
     h1, h2, h3, h4 { color: #2B2B2B !important; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700 !important; }
 
+    /* Карточка фильма */
     .movie-card {
         background-color: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 12px;
         padding: 15px; text-align: center; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.05); transition: 0.3s;
@@ -205,6 +219,13 @@ st.markdown("""
     }
     .movie-card:hover {
         border-color: #E50914; box-shadow: 0px 6px 15px rgba(229, 9, 20, 0.15); transform: translateY(-2px);
+    }
+    .movie-card img {
+        width: 100%;
+        height: 360px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 10px;
     }
 
     .review-box {
@@ -293,9 +314,10 @@ if st.session_state.user_role is not None:
                     semen_status = next((a["status"] for a in actions_list if
                                          a["username"] == "Семён" and str(a["movie_id"]) == str(movie["id"])), None)
                     kristina_status = next((a["status"] for a in actions_list if
-                                            a["username"] == "Кристина" and str(a["movie_id"]) == str(movie["id"])), None)
+                                            a["username"] == "Кристина" and str(a["movie_id"]) == str(movie["id"])),
+                                           None)
 
-                    badges_html = "<div style='margin-top:5px; margin-bottom:5px; text-align:center;'>"
+                    badges_html = "<div style='margin-top:6px; margin-bottom:6px; text-align:center;'>"
                     if semen_status == "watched":
                         badges_html += "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-right:3px;'>🕶 Сёма ✅</span>"
                     if kristina_status == "watched":
@@ -303,10 +325,10 @@ if st.session_state.user_role is not None:
                     badges_html += "</div>"
 
                     genre_str = movie.get("genre", "")
-                    genre_badge = f"<br><span style='font-size:12px; color:#666;'>🎭 {genre_str}</span>" if genre_str else ""
+                    genre_badge = f"<div style='font-size:12px; color:#666; margin-top:2px;'>🎭 {genre_str}</div>" if genre_str else ""
 
                     folder_str = movie.get("folder", "")
-                    folder_badge = f"<br><span style='font-size:11px; color:#E50914; font-weight:bold;'>📁 Папка: {folder_str}</span>" if folder_str else ""
+                    folder_badge = f"<div style='font-size:11px; color:#E50914; font-weight:bold; margin-top:2px;'>📁 {folder_str}</div>" if folder_str else ""
 
                     is_rec = movie.get("recommended", False)
                     rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Топ</span>" if is_rec else ""
@@ -314,7 +336,7 @@ if st.session_state.user_role is not None:
                     st.markdown(f"""
                         <div class="movie-card">
                             {rec_badge}
-                            <img src="{movie['poster_url']}" style="width:100%; max-height:380px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
+                            <img src="{movie['poster_url']}">
                             <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:18px; text-align:center;">{movie['title']}</h3>
                             <span style="background-color:#2B2B2B; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span>
                             {genre_badge}
@@ -370,19 +392,19 @@ if st.session_state.user_role is not None:
             "🔥 Семён рекомендует",
             "👤 Моё пространство"
         ]
-        
+
         mapping = {
             "catalog": "🌐 Общий каталог",
             "kristina_cinema": "🍿 Кинотеатр Кристины",
             "semen_recommend": "🔥 Семён рекомендует",
             "my_space": "👤 Моё пространство"
         }
-        
+
         reverse_mapping = {v: k for k, v in mapping.items()}
-        
+
         current_selection = mapping.get(st.session_state.nav_page, "🌐 Общий каталог")
         selected_page = st.radio("🧭 Навигация по сайту:", page_options, index=page_options.index(current_selection))
-        
+
         new_nav = reverse_mapping[selected_page]
         if new_nav != st.session_state.nav_page:
             st.session_state.nav_page = new_nav
@@ -441,8 +463,8 @@ if st.session_state.user_role is not None:
         if st.session_state.user_role == "Семён":
             st.write("---")
             st.markdown("### 🛠 Панель Семёна (Управление системой)")
-            adm_tab1, adm_tab2, adm_tab3 = st.tabs(
-                ["🎬 Добавить фильм", "🧠 Создать Вопрос Квиза", "🔔 Заявки от Кристины"])
+            adm_tab1, adm_tab2, adm_tab3, adm_tab4 = st.tabs(
+                ["🎬 Добавить фильм", "🧠 Создать Квиз", "🔔 Заявки", "✏️ Редактировать фильм"])
 
             with adm_tab1:
                 with st.form("add_movie_form", clear_on_submit=True):
@@ -527,6 +549,31 @@ if st.session_state.user_role is not None:
                                 requests.delete(f"{SUPABASE_URL}/rest/v1/requests?id=eq.{req['id']}", headers=HEADERS)
                                 st.cache_data.clear()
                                 st.rerun()
+
+            with adm_tab4:
+                st.markdown("#### ✏️ Настройки жанров и папок у существующих фильмов")
+                if not movies_list:
+                    st.info("Каталог пуст.")
+                else:
+                    selected_edit_title = st.selectbox("Выбери фильм для редактирования:",
+                                                       [m["title"] for m in movies_list])
+                    target_movie = next(m for m in movies_list if m["title"] == selected_edit_title)
+
+                    existing_genres = [g.strip() for g in target_movie.get("genre", "").split(",") if g.strip()]
+                    updated_genres = st.multiselect("Жанры фильма:", POPULAR_GENRES,
+                                                    default=[g for g in existing_genres if g in POPULAR_GENRES])
+                    updated_folder = st.text_input("Папка / Франшиза:", value=target_movie.get("folder", ""))
+
+                    if st.button("💾 Сохранить изменения фильма"):
+                        patch_payload = {
+                            "genre": ", ".join(updated_genres),
+                            "folder": updated_folder.strip()
+                        }
+                        requests.patch(f"{SUPABASE_URL}/rest/v1/movies?id=eq.{target_movie['id']}", headers=HEADERS,
+                                       json=patch_payload)
+                        st.cache_data.clear()
+                        st.success(f"Настройки фильма «{target_movie['title']}» успешно обновлены!")
+                        st.rerun()
 
     # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
     elif st.session_state.current_page == "kristina_cinema":
@@ -667,7 +714,8 @@ if st.session_state.user_role is not None:
             user_all_reviews = [r for r in reviews_list if r["username"] == st.session_state.user_role]
             rated_movie_ids = list(set([str(r["movie_id"]) for r in user_all_reviews]))
             reviewed_movie_ids = list(
-                set([str(r["movie_id"]) for r in user_all_reviews if r.get("review_text") and r["review_text"].strip()]))
+                set([str(r["movie_id"]) for r in user_all_reviews if
+                     r.get("review_text") and r["review_text"].strip()]))
 
             rated_objs = [m for m in movies_list if str(m["id"]) in rated_movie_ids]
             cnt_rate_film = len([m for m in rated_objs if m["category"] == "Фильм"])
@@ -682,128 +730,238 @@ if st.session_state.user_role is not None:
             cnt_rev_total = len(reviewed_objs)
 
             achievements_config = [
-                {"target": 1, "cur": cnt_watch_film, "name": "Первый сеанс", "desc": "Посмотреть 1 фильм", "emoji": "🎥"},
-                {"target": 3, "cur": cnt_watch_film, "name": "«Зритель с дивана»", "desc": "Посмотреть 3 фильма", "emoji": "🛋"},
-                {"target": 5, "cur": cnt_watch_film, "name": "Разогрев проектора", "desc": "Посмотреть 5 фильмов", "emoji": "📽"},
-                {"target": 7, "cur": cnt_watch_film, "name": "Вошла во вкус", "desc": "Посмотреть 7 фильмов", "emoji": "😋"},
-                {"target": 10, "cur": cnt_watch_film, "name": "«Смотрю лучше, чем сплю»", "desc": "Посмотреть 10 фильмов", "emoji": "☕️"},
-                {"target": 15, "cur": cnt_watch_film, "name": "Постоянный зритель", "desc": "Посмотреть 15 фильмов", "emoji": "🎟"},
-                {"target": 20, "cur": cnt_watch_film, "name": "«Золотая коллекция»", "desc": "Посмотреть 20 фильмов", "emoji": "🏆"},
-                {"target": 25, "cur": cnt_watch_film, "name": "Хранитель попкорна", "desc": "Посмотреть 25 фильмов", "emoji": "🍿"},
-                {"target": 30, "cur": cnt_watch_film, "name": "Легенда кинозала", "desc": "Посмотреть 30 фильмов", "emoji": "👑"},
+                {"target": 1, "cur": cnt_watch_film, "name": "Первый сеанс", "desc": "Посмотреть 1 фильм",
+                 "emoji": "🎥"},
+                {"target": 3, "cur": cnt_watch_film, "name": "«Зритель с дивана»", "desc": "Посмотреть 3 фильма",
+                 "emoji": "🛋"},
+                {"target": 5, "cur": cnt_watch_film, "name": "Разогрев проектора", "desc": "Посмотреть 5 фильмов",
+                 "emoji": "📽"},
+                {"target": 7, "cur": cnt_watch_film, "name": "Вошла во вкус", "desc": "Посмотреть 7 фильмов",
+                 "emoji": "😋"},
+                {"target": 10, "cur": cnt_watch_film, "name": "«Смотрю лучше, чем сплю»",
+                 "desc": "Посмотреть 10 фильмов", "emoji": "☕️"},
+                {"target": 15, "cur": cnt_watch_film, "name": "Постоянный зритель", "desc": "Посмотреть 15 фильмов",
+                 "emoji": "🎟"},
+                {"target": 20, "cur": cnt_watch_film, "name": "«Золотая коллекция»", "desc": "Посмотреть 20 фильмов",
+                 "emoji": "🏆"},
+                {"target": 25, "cur": cnt_watch_film, "name": "Хранитель попкорна", "desc": "Посмотреть 25 фильмов",
+                 "emoji": "🍿"},
+                {"target": 30, "cur": cnt_watch_film, "name": "Легенда кинозала", "desc": "Посмотреть 30 фильмов",
+                 "emoji": "👑"},
 
-                {"target": 1, "cur": cnt_watch_serial, "name": "«Пилотный эпизод»", "desc": "Посмотреть 1 сериал", "emoji": "📺"},
-                {"target": 3, "cur": cnt_watch_serial, "name": "Ещё одну и спать", "desc": "Посмотреть 3 сериала", "emoji": "🥱"},
-                {"target": 5, "cur": cnt_watch_serial, "name": "Марафонец сезонов", "desc": "Посмотреть 5 сериалов", "emoji": "🏃‍♀️"},
-                {"target": 7, "cur": cnt_watch_serial, "name": "«Втянулся»", "desc": "Посмотреть 7 сериалов", "emoji": "🧲"},
-                {"target": 10, "cur": cnt_watch_serial, "name": "Спонсор бессонницы", "desc": "Посмотреть 10 сериалов", "emoji": "🦉"},
-                {"target": 15, "cur": cnt_watch_serial, "name": "«Королева сезонов»", "desc": "Посмотреть 15 сериалов", "emoji": "💅"},
+                {"target": 1, "cur": cnt_watch_serial, "name": "«Пилотный эпизод»", "desc": "Посмотреть 1 сериал",
+                 "emoji": "📺"},
+                {"target": 3, "cur": cnt_watch_serial, "name": "Ещё одну и спать", "desc": "Посмотреть 3 сериала",
+                 "emoji": "🥱"},
+                {"target": 5, "cur": cnt_watch_serial, "name": "Марафонец сезонов", "desc": "Посмотреть 5 сериалов",
+                 "emoji": "🏃‍♀️"},
+                {"target": 7, "cur": cnt_watch_serial, "name": "«Втянулся»", "desc": "Посмотреть 7 сериалов",
+                 "emoji": "🧲"},
+                {"target": 10, "cur": cnt_watch_serial, "name": "Спонсор бессонницы", "desc": "Посмотреть 10 сериалов",
+                 "emoji": "🦉"},
+                {"target": 15, "cur": cnt_watch_serial, "name": "«Королева сезонов»", "desc": "Посмотреть 15 сериалов",
+                 "emoji": "💅"},
 
-                {"target": 1, "cur": cnt_watch_mult, "name": "Возвращение в детство", "desc": "Посмотреть 1 мультфильм", "emoji": "🧸"},
-                {"target": 3, "cur": cnt_watch_mult, "name": "Друг мультгероев", "desc": "Посмотреть 3 мультфильма", "emoji": "🎈"},
-                {"target": 5, "cur": cnt_watch_mult, "name": "Любитель анимации", "desc": "Посмотреть 5 мультфильмов", "emoji": "🎨"},
-                {"target": 7, "cur": cnt_watch_mult, "name": "«Мультяшный фанат»", "desc": "Посмотреть 7 мультфильмов", "emoji": "🍭"},
-                {"target": 10, "cur": cnt_watch_mult, "name": "2D и 3D эксперт", "desc": "Посмотреть 10 мультфильмов", "emoji": "🕶"},
-                {"target": 15, "cur": cnt_watch_mult, "name": "Фанат Диснея", "desc": "Посмотреть 15 мультфильмов", "emoji": "🏰"},
-                {"target": 20, "cur": cnt_watch_mult, "name": "«Анимания»", "desc": "Посмотреть 20 мультфильмов", "emoji": "⚡️"},
-                {"target": 25, "cur": cnt_watch_mult, "name": "Мультяшный эксперт", "desc": "Посмотреть 25 мультфильмов", "emoji": "💫"},
-                {"target": 30, "cur": cnt_watch_mult, "name": "Повелитель рисовки", "desc": "Посмотреть 30 мультфильмов", "emoji": "🔮"},
+                {"target": 1, "cur": cnt_watch_mult, "name": "Возвращение в детство", "desc": "Посмотреть 1 мультфильм",
+                 "emoji": "🧸"},
+                {"target": 3, "cur": cnt_watch_mult, "name": "Друг мультгероев", "desc": "Посмотреть 3 мультфильма",
+                 "emoji": "🎈"},
+                {"target": 5, "cur": cnt_watch_mult, "name": "Любитель анимации", "desc": "Посмотреть 5 мультфильмов",
+                 "emoji": "🎨"},
+                {"target": 7, "cur": cnt_watch_mult, "name": "«Мультяшный фанат»", "desc": "Посмотреть 7 мультфильмов",
+                 "emoji": "🍭"},
+                {"target": 10, "cur": cnt_watch_mult, "name": "2D и 3D эксперт", "desc": "Посмотреть 10 мультфильмов",
+                 "emoji": "🕶"},
+                {"target": 15, "cur": cnt_watch_mult, "name": "Фанат Диснея", "desc": "Посмотреть 15 мультфильмов",
+                 "emoji": "🏰"},
+                {"target": 20, "cur": cnt_watch_mult, "name": "«Анимания»", "desc": "Посмотреть 20 мультфильмов",
+                 "emoji": "⚡️"},
+                {"target": 25, "cur": cnt_watch_mult, "name": "Мультяшный эксперт",
+                 "desc": "Посмотреть 25 мультфильмов", "emoji": "💫"},
+                {"target": 30, "cur": cnt_watch_mult, "name": "Повелитель рисовки",
+                 "desc": "Посмотреть 30 мультфильмов", "emoji": "🔮"},
 
-                {"target": 5, "cur": cnt_watch_total, "name": "«Киномарафонец»", "desc": "Посмотреть 5 тайтлов", "emoji": "🧭"},
-                {"target": 7, "cur": cnt_watch_total, "name": "«Кинолюбитель»", "desc": "Посмотреть 7 тайтлов", "emoji": "❤️"},
-                {"target": 10, "cur": cnt_watch_total, "name": "«Кинопутешественник»", "desc": "Посмотреть 10 тайтлов", "emoji": "🌍"},
-                {"target": 15, "cur": cnt_watch_total, "name": "Почетный гость Кинозала", "desc": "Посмотреть 15 тайтлов", "emoji": "📜"},
-                {"target": 20, "cur": cnt_watch_total, "name": "Хранитель пульта", "desc": "Посмотреть 20 тайтлов", "emoji": "🎮"},
-                {"target": 25, "cur": cnt_watch_total, "name": "«Друг режиссёра»", "desc": "Посмотреть 25 тайтлов", "emoji": "🤝"},
-                {"target": 30, "cur": cnt_watch_total, "name": "«Хранитель кадров»", "desc": "Посмотреть 30 тайтлов", "emoji": "🗄"},
-                {"target": 35, "cur": cnt_watch_total, "name": "Амбассадор Кинопоиска", "desc": "Посмотреть 35 тайтлов", "emoji": "💎"},
-                {"target": 40, "cur": cnt_watch_total, "name": "Покоритель экранов", "desc": "Посмотреть 40 тайтлов", "emoji": "🚀"},
-                {"target": 45, "cur": cnt_watch_total, "name": "Легенда просмотра", "desc": "Посмотреть 45 тайтлов", "emoji": "🌠"},
-                {"target": 50, "cur": cnt_watch_total, "name": "Живёт в кинозале", "desc": "Посмотреть 50 тайтлов", "emoji": "🏠"},
-                {"target": 55, "cur": cnt_watch_total, "name": "Спилберг нервно курит", "desc": "Посмотреть 55 тайтлов", "emoji": "🚬"},
-                {"target": 60, "cur": cnt_watch_total, "name": "«Властелин кинематографа»", "desc": "Посмотреть 60 тайтлов", "emoji": "🧝‍♂️"},
+                {"target": 5, "cur": cnt_watch_total, "name": "«Киномарафонец»", "desc": "Посмотреть 5 тайтлов",
+                 "emoji": "🧭"},
+                {"target": 7, "cur": cnt_watch_total, "name": "«Кинолюбитель»", "desc": "Посмотреть 7 тайтлов",
+                 "emoji": "❤️"},
+                {"target": 10, "cur": cnt_watch_total, "name": "«Кинопутешественник»", "desc": "Посмотреть 10 тайтлов",
+                 "emoji": "🌍"},
+                {"target": 15, "cur": cnt_watch_total, "name": "Почетный гость Кинозала",
+                 "desc": "Посмотреть 15 тайтлов", "emoji": "📜"},
+                {"target": 20, "cur": cnt_watch_total, "name": "Хранитель пульта", "desc": "Посмотреть 20 тайтлов",
+                 "emoji": "🎮"},
+                {"target": 25, "cur": cnt_watch_total, "name": "«Друг режиссёра»", "desc": "Посмотреть 25 тайтлов",
+                 "emoji": "🤝"},
+                {"target": 30, "cur": cnt_watch_total, "name": "«Хранитель кадров»", "desc": "Посмотреть 30 тайтлов",
+                 "emoji": "🗄"},
+                {"target": 35, "cur": cnt_watch_total, "name": "Амбассадор Кинопоиска", "desc": "Посмотреть 35 тайтлов",
+                 "emoji": "💎"},
+                {"target": 40, "cur": cnt_watch_total, "name": "Покоритель экранов", "desc": "Посмотреть 40 тайтлов",
+                 "emoji": "🚀"},
+                {"target": 45, "cur": cnt_watch_total, "name": "Легенда просмотра", "desc": "Посмотреть 45 тайтлов",
+                 "emoji": "🌠"},
+                {"target": 50, "cur": cnt_watch_total, "name": "Живёт в кинозале", "desc": "Посмотреть 50 тайтлов",
+                 "emoji": "🏠"},
+                {"target": 55, "cur": cnt_watch_total, "name": "Спилберг нервно курит", "desc": "Посмотреть 55 тайтлов",
+                 "emoji": "🚬"},
+                {"target": 60, "cur": cnt_watch_total, "name": "«Властелин кинематографа»",
+                 "desc": "Посмотреть 60 тайтлов", "emoji": "🧝‍♂️"},
 
-                {"target": 1, "cur": cnt_rate_film, "name": "«Первый вердикт»", "desc": "Оценить 1 фильм", "emoji": "⚖️"},
-                {"target": 3, "cur": cnt_rate_film, "name": "Уже есть мнение", "desc": "Оценить 3 фильма", "emoji": "🗣"},
-                {"target": 5, "cur": cnt_rate_film, "name": "Оценщик кадров", "desc": "Оценить 5 фильмов", "emoji": "📋"},
+                {"target": 1, "cur": cnt_rate_film, "name": "«Первый вердикт»", "desc": "Оценить 1 фильм",
+                 "emoji": "⚖️"},
+                {"target": 3, "cur": cnt_rate_film, "name": "Уже есть мнение", "desc": "Оценить 3 фильма",
+                 "emoji": "🗣"},
+                {"target": 5, "cur": cnt_rate_film, "name": "Оценщик кадров", "desc": "Оценить 5 фильмов",
+                 "emoji": "📋"},
                 {"target": 7, "cur": cnt_rate_film, "name": "Член жюри", "desc": "Оценить 7 фильмов", "emoji": "🧐"},
-                {"target": 10, "cur": cnt_rate_film, "name": "Судья кинозала", "desc": "Оценить 10 фильмов", "emoji": "🔨"},
-                {"target": 15, "cur": cnt_rate_film, "name": "Раздающий звезды", "desc": "Оценить 15 фильмов", "emoji": "✨"},
-                {"target": 20, "cur": cnt_rate_film, "name": "Мастер рейтингов", "desc": "Оценить 20 фильмов", "emoji": "📈"},
-                {"target": 25, "cur": cnt_rate_film, "name": "Кинокритик", "desc": "Оценить 25 фильмов", "emoji": "🕵️‍♀️"},
-                {"target": 30, "cur": cnt_rate_film, "name": "«Властелин кинематографа»", "desc": "Оценить 30 фильмов", "emoji": "🌋"},
+                {"target": 10, "cur": cnt_rate_film, "name": "Судья кинозала", "desc": "Оценить 10 фильмов",
+                 "emoji": "🔨"},
+                {"target": 15, "cur": cnt_rate_film, "name": "Раздающий звезды", "desc": "Оценить 15 фильмов",
+                 "emoji": "✨"},
+                {"target": 20, "cur": cnt_rate_film, "name": "Мастер рейтингов", "desc": "Оценить 20 фильмов",
+                 "emoji": "📈"},
+                {"target": 25, "cur": cnt_rate_film, "name": "Кинокритик", "desc": "Оценить 25 фильмов",
+                 "emoji": "🕵️‍♀️"},
+                {"target": 30, "cur": cnt_rate_film, "name": "«Властелин кинематографа»", "desc": "Оценить 30 фильмов",
+                 "emoji": "🌋"},
 
-                {"target": 1, "cur": cnt_rate_serial, "name": "Первый вердикт (Сериалы)", "desc": "Оценить 1 сериал", "emoji": "⏳"},
-                {"target": 3, "cur": cnt_rate_serial, "name": "«Сверхзритель»", "desc": "Оценить 3 сериала", "emoji": "🦸‍♀️"},
-                {"target": 5, "cur": cnt_rate_serial, "name": "Звездный марафон", "desc": "Оценить 5 сериалов", "emoji": "🌌"},
-                {"target": 7, "cur": cnt_rate_serial, "name": "Оценщик сезонов", "desc": "Оценить 7 сериалов", "emoji": "📊"},
-                {"target": 10, "cur": cnt_rate_serial, "name": "Знаток сериалов", "desc": "Оценить 10 сериалов", "emoji": "🧠"},
-                {"target": 15, "cur": cnt_rate_serial, "name": "Судья Netflix", "desc": "Оценить 15 сериалов", "emoji": "🔴"},
+                {"target": 1, "cur": cnt_rate_serial, "name": "Первый вердикт (Сериалы)", "desc": "Оценить 1 сериал",
+                 "emoji": "⏳"},
+                {"target": 3, "cur": cnt_rate_serial, "name": "«Сверхзритель»", "desc": "Оценить 3 сериала",
+                 "emoji": "🦸‍♀️"},
+                {"target": 5, "cur": cnt_rate_serial, "name": "Звездный марафон", "desc": "Оценить 5 сериалов",
+                 "emoji": "🌌"},
+                {"target": 7, "cur": cnt_rate_serial, "name": "Оценщик сезонов", "desc": "Оценить 7 сериалов",
+                 "emoji": "📊"},
+                {"target": 10, "cur": cnt_rate_serial, "name": "Знаток сериалов", "desc": "Оценить 10 сериалов",
+                 "emoji": "🧠"},
+                {"target": 15, "cur": cnt_rate_serial, "name": "Судья Netflix", "desc": "Оценить 15 сериалов",
+                 "emoji": "🔴"},
 
-                {"target": 1, "cur": cnt_rate_mult, "name": "Первое мнение", "desc": "Оценить 1 мультфильм", "emoji": "👶"},
-                {"target": 3, "cur": cnt_rate_mult, "name": "Добрый критик", "desc": "Оценить 3 мультфильма", "emoji": "☀️"},
-                {"target": 5, "cur": cnt_rate_mult, "name": "Звездочет мультяшек", "desc": "Оценить 5 мультфильмов", "emoji": "🌠"},
-                {"target": 7, "cur": cnt_rate_mult, "name": "Анимационное жюри", "desc": "Оценить 7 мультфильмов", "emoji": "🦄"},
-                {"target": 10, "cur": cnt_rate_mult, "name": "Знаток анимации", "desc": "Оценить 10 мультфильмов", "emoji": "🤓"},
-                {"target": 15, "cur": cnt_rate_mult, "name": "Мульткритик", "desc": "Оценить 15 мультфильмов", "emoji": "✍️"},
-                {"target": 20, "cur": cnt_rate_mult, "name": "Раздающий лайки", "desc": "Оценить 20 мультфильмов", "emoji": "👍"},
-                {"target": 25, "cur": cnt_rate_mult, "name": "Строгий, но справедливый", "desc": "Оценить 25 мультфильмов", "emoji": "📐"},
-                {"target": 30, "cur": cnt_rate_mult, "name": "Легендарный судья анимации", "desc": "Оценить 30 мультфильмов", "emoji": "🐉"},
+                {"target": 1, "cur": cnt_rate_mult, "name": "Первое мнение", "desc": "Оценить 1 мультфильм",
+                 "emoji": "👶"},
+                {"target": 3, "cur": cnt_rate_mult, "name": "Добрый критик", "desc": "Оценить 3 мультфильма",
+                 "emoji": "☀️"},
+                {"target": 5, "cur": cnt_rate_mult, "name": "Звездочет мультяшек", "desc": "Оценить 5 мультфильмов",
+                 "emoji": "🌠"},
+                {"target": 7, "cur": cnt_rate_mult, "name": "Анимационное жюри", "desc": "Оценить 7 мультфильмов",
+                 "emoji": "🦄"},
+                {"target": 10, "cur": cnt_rate_mult, "name": "Знаток анимации", "desc": "Оценить 10 мультфильмов",
+                 "emoji": "🤓"},
+                {"target": 15, "cur": cnt_rate_mult, "name": "Мульткритик", "desc": "Оценить 15 мультфильмов",
+                 "emoji": "✍️"},
+                {"target": 20, "cur": cnt_rate_mult, "name": "Раздающий лайки", "desc": "Оценить 20 мультфильмов",
+                 "emoji": "👍"},
+                {"target": 25, "cur": cnt_rate_mult, "name": "Строгий, но справедливый",
+                 "desc": "Оценить 25 мультфильмов", "emoji": "📐"},
+                {"target": 30, "cur": cnt_rate_mult, "name": "Легендарный судья анимации",
+                 "desc": "Оценить 30 мультфильмов", "emoji": "🐉"},
 
-                {"target": 5, "cur": cnt_rate_total, "name": "Младший оценщик", "desc": "Оценить 5 тайтлов", "emoji": "🌱"},
-                {"target": 7, "cur": cnt_rate_total, "name": "Есть что сказать", "desc": "Оценить 7 тайтлов", "emoji": "💬"},
-                {"target": 10, "cur": cnt_rate_total, "name": "Уверенный критик", "desc": "Оценить 10 тайтлов", "emoji": "🎙"},
-                {"target": 15, "cur": cnt_rate_total, "name": "Формирователь вкуса", "desc": "Оценить 15 тайтлов", "emoji": "🍏"},
-                {"target": 20, "cur": cnt_rate_total, "name": "Куратор рейтингов", "desc": "Оценить 20 тайтлов", "emoji": "💎"},
-                {"target": 25, "cur": cnt_rate_total, "name": "Эксперт впечатлений", "desc": "Оценить 25 тайтлов", "emoji": "🔮"},
-                {"target": 30, "cur": cnt_rate_total, "name": "Неподкупное жюри", "desc": "Оценить 30 тайтлов", "emoji": "🔒"},
-                {"target": 35, "cur": cnt_rate_total, "name": "Профи оценок", "desc": "Оценить 35 тайтлов", "emoji": "🎖"},
-                {"target": 40, "cur": cnt_rate_total, "name": "Мастер вкуса", "desc": "Оценить 40 тайтлов", "emoji": "🍒"},
-                {"target": 45, "cur": cnt_rate_total, "name": "Энциклопедия оценок", "desc": "Оценить 45 тайтлов", "emoji": "📚"},
-                {"target": 50, "cur": cnt_rate_total, "name": "Абсолютный авторитет", "desc": "Оценить 50 тайтлов", "emoji": "🔱"},
-                {"target": 55, "cur": cnt_rate_total, "name": "Министерство культуры", "desc": "Оценить 55 тайтлов", "emoji": "🏛"},
-                {"target": 60, "cur": cnt_rate_total, "name": "Верховный суд кино", "desc": "Оценить 60 тайтлов", "emoji": "🦅"},
+                {"target": 5, "cur": cnt_rate_total, "name": "Младший оценщик", "desc": "Оценить 5 тайтлов",
+                 "emoji": "🌱"},
+                {"target": 7, "cur": cnt_rate_total, "name": "Есть что сказать", "desc": "Оценить 7 тайтлов",
+                 "emoji": "💬"},
+                {"target": 10, "cur": cnt_rate_total, "name": "Уверенный критик", "desc": "Оценить 10 тайтлов",
+                 "emoji": "🎙"},
+                {"target": 15, "cur": cnt_rate_total, "name": "Формирователь вкуса", "desc": "Оценить 15 тайтлов",
+                 "emoji": "🍏"},
+                {"target": 20, "cur": cnt_rate_total, "name": "Куратор рейтингов", "desc": "Оценить 20 тайтлов",
+                 "emoji": "💎"},
+                {"target": 25, "cur": cnt_rate_total, "name": "Эксперт впечатлений", "desc": "Оценить 25 тайтлов",
+                 "emoji": "🔮"},
+                {"target": 30, "cur": cnt_rate_total, "name": "Неподкупное жюри", "desc": "Оценить 30 тайтлов",
+                 "emoji": "🔒"},
+                {"target": 35, "cur": cnt_rate_total, "name": "Профи оценок", "desc": "Оценить 35 тайтлов",
+                 "emoji": "🎖"},
+                {"target": 40, "cur": cnt_rate_total, "name": "Мастер вкуса", "desc": "Оценить 40 тайтлов",
+                 "emoji": "🍒"},
+                {"target": 45, "cur": cnt_rate_total, "name": "Энциклопедия оценок", "desc": "Оценить 45 тайтлов",
+                 "emoji": "📚"},
+                {"target": 50, "cur": cnt_rate_total, "name": "Абсолютный авторитет", "desc": "Оценить 50 тайтлов",
+                 "emoji": "🔱"},
+                {"target": 55, "cur": cnt_rate_total, "name": "Министерство культуры", "desc": "Оценить 55 тайтлов",
+                 "emoji": "🏛"},
+                {"target": 60, "cur": cnt_rate_total, "name": "Верховный суд кино", "desc": "Оценить 60 тайтлов",
+                 "emoji": "🦅"},
 
-                {"target": 1, "cur": cnt_rev_film, "name": "«Первое слово»", "desc": "Написать рецензию на 1 фильм", "emoji": "✏️"},
-                {"target": 3, "cur": cnt_rev_film, "name": "«Критик-любитель»", "desc": "Написать рецензию на 3 фильма", "emoji": "📝"},
-                {"target": 5, "cur": cnt_rev_film, "name": "«Вдумчивый зритель»", "desc": "Написать рецензию на 5 фильмов", "emoji": "🤔"},
-                {"target": 7, "cur": cnt_rev_film, "name": "Мастер слова", "desc": "Написать рецензию на 7 фильмов", "emoji": "✒️"},
-                {"target": 10, "cur": cnt_rev_film, "name": "Независимый эксперт", "desc": "Написать рецензию на 10 фильмов", "emoji": "🕊"},
-                {"target": 15, "cur": cnt_rev_film, "name": "«Голос кинозала»", "desc": "Написать рецензию на 15 фильмов", "emoji": "📢"},
-                {"target": 20, "cur": cnt_rev_film, "name": "«Острое перо»", "desc": "Написать рецензию на 20 фильмов", "emoji": "🪶"},
-                {"target": 25, "cur": cnt_rev_film, "name": "Голос народа", "desc": "Написать рецензию на 25 фильмов", "emoji": "👥"},
-                {"target": 30, "cur": cnt_rev_film, "name": "Гений мысли", "desc": "Написать рецензию на 30 фильмов", "emoji": "💡"},
+                {"target": 1, "cur": cnt_rev_film, "name": "«Первое слово»", "desc": "Написать рецензию на 1 фильм",
+                 "emoji": "✏️"},
+                {"target": 3, "cur": cnt_rev_film, "name": "«Критик-любитель»", "desc": "Написать рецензию на 3 фильма",
+                 "emoji": "📝"},
+                {"target": 5, "cur": cnt_rev_film, "name": "«Вдумчивый зритель»",
+                 "desc": "Написать рецензию на 5 фильмов", "emoji": "🤔"},
+                {"target": 7, "cur": cnt_rev_film, "name": "Мастер слова", "desc": "Написать рецензию на 7 фильмов",
+                 "emoji": "✒️"},
+                {"target": 10, "cur": cnt_rev_film, "name": "Независимый эксперт",
+                 "desc": "Написать рецензию на 10 фильмов", "emoji": "🕊"},
+                {"target": 15, "cur": cnt_rev_film, "name": "«Голос кинозала»",
+                 "desc": "Написать рецензию на 15 фильмов", "emoji": "📢"},
+                {"target": 20, "cur": cnt_rev_film, "name": "«Острое перо»", "desc": "Написать рецензию на 20 фильмов",
+                 "emoji": "🪶"},
+                {"target": 25, "cur": cnt_rev_film, "name": "Голос народа", "desc": "Написать рецензию на 25 фильмов",
+                 "emoji": "👥"},
+                {"target": 30, "cur": cnt_rev_film, "name": "Гений мысли", "desc": "Написать рецензию на 30 фильмов",
+                 "emoji": "💡"},
 
-                {"target": 1, "cur": cnt_rev_serial, "name": "Первая заметка", "desc": "Написать рецензию на 1 сериал", "emoji": "📓"},
-                {"target": 3, "cur": cnt_rev_serial, "name": "Обзорщик сезонов", "desc": "Написать рецензию на 3 сериала", "emoji": "🎞"},
-                {"target": 5, "cur": cnt_rev_serial, "name": "Автор теорий", "desc": "Написать рецензию на 5 сериалов", "emoji": "🕵️"},
-                {"target": 7, "cur": cnt_rev_serial, "name": "Летописец сериалов", "desc": "Написать рецензию на 7 сериалов", "emoji": "🗂"},
-                {"target": 10, "cur": cnt_rev_serial, "name": "Ловец деталей", "desc": "Написать рецензию на 10 сериалов", "emoji": "🔍"},
-                {"target": 15, "cur": cnt_rev_serial, "name": "Повелитель обзоров", "desc": "Написать рецензию на 15 сериалов", "emoji": "👑"},
+                {"target": 1, "cur": cnt_rev_serial, "name": "Первая заметка", "desc": "Написать рецензию на 1 сериал",
+                 "emoji": "📓"},
+                {"target": 3, "cur": cnt_rev_serial, "name": "Обзорщик сезонов",
+                 "desc": "Написать рецензию на 3 сериала", "emoji": "🎞"},
+                {"target": 5, "cur": cnt_rev_serial, "name": "Автор теорий", "desc": "Написать рецензию на 5 сериалов",
+                 "emoji": "🕵️"},
+                {"target": 7, "cur": cnt_rev_serial, "name": "Летописец сериалов",
+                 "desc": "Написать рецензию на 7 сериалов", "emoji": "🗂"},
+                {"target": 10, "cur": cnt_rev_serial, "name": "Ловец деталей",
+                 "desc": "Написать рецензию на 10 сериалов", "emoji": "🔍"},
+                {"target": 15, "cur": cnt_rev_serial, "name": "Повелитель обзоров",
+                 "desc": "Написать рецензию на 15 сериалов", "emoji": "👑"},
 
-                {"target": 1, "cur": cnt_rev_mult, "name": "Первое впечатление", "desc": "Написать рецензию на 1 мультфильм", "emoji": "✨"},
-                {"target": 3, "cur": cnt_rev_mult, "name": "Автор волшебных строк", "desc": "Написать рецензию на 3 мультфильма", "emoji": "🪄"},
-                {"target": 5, "cur": cnt_rev_mult, "name": "Мульт-обозреватель", "desc": "Написать рецензию на 5 мультфильмов", "emoji": "🦊"},
-                {"target": 7, "cur": cnt_rev_mult, "name": "Разбор рисовки", "desc": "Написать рецензию на 7 мультфильмов", "emoji": "📐"},
-                {"target": 10, "cur": cnt_rev_mult, "name": "Летописец мультмиров", "desc": "Написать рецензию на 10 мультфильмов", "emoji": "🗺"},
-                {"target": 15, "cur": cnt_rev_mult, "name": "Профессор анимации", "desc": "Написать рецензию на 15 мультфильмов", "emoji": "🎓"},
-                {"target": 20, "cur": cnt_rev_mult, "name": "Маг рецензий", "desc": "Написать рецензию на 20 мультфильмов", "emoji": "🔮"},
-                {"target": 25, "cur": cnt_rev_mult, "name": "Архивариус детства", "desc": "Написать рецензию на 25 мультфильмов", "emoji": "🧸"},
-                {"target": 30, "cur": cnt_rev_mult, "name": "Легенда анимации", "desc": "Написать рецензию на 30 мультфильмов", "emoji": "🐉"},
+                {"target": 1, "cur": cnt_rev_mult, "name": "Первое впечатление",
+                 "desc": "Написать рецензию на 1 мультфильм", "emoji": "✨"},
+                {"target": 3, "cur": cnt_rev_mult, "name": "Автор волшебных строк",
+                 "desc": "Написать рецензию на 3 мультфильма", "emoji": "🪄"},
+                {"target": 5, "cur": cnt_rev_mult, "name": "Мульт-обозреватель",
+                 "desc": "Написать рецензию на 5 мультфильмов", "emoji": "🦊"},
+                {"target": 7, "cur": cnt_rev_mult, "name": "Разбор рисовки",
+                 "desc": "Написать рецензию на 7 мультфильмов", "emoji": "📐"},
+                {"target": 10, "cur": cnt_rev_mult, "name": "Летописец мультмиров",
+                 "desc": "Написать рецензию на 10 мультфильмов", "emoji": "🗺"},
+                {"target": 15, "cur": cnt_rev_mult, "name": "Профессор анимации",
+                 "desc": "Написать рецензию на 15 мультфильмов", "emoji": "🎓"},
+                {"target": 20, "cur": cnt_rev_mult, "name": "Маг рецензий",
+                 "desc": "Написать рецензию на 20 мультфильмов", "emoji": "🔮"},
+                {"target": 25, "cur": cnt_rev_mult, "name": "Архивариус детства",
+                 "desc": "Написать рецензию на 25 мультфильмов", "emoji": "🧸"},
+                {"target": 30, "cur": cnt_rev_mult, "name": "Легенда анимации",
+                 "desc": "Написать рецензию на 30 мультфильмов", "emoji": "🐉"},
 
-                {"target": 5, "cur": cnt_rev_total, "name": "Начинающий автор", "desc": "Написать рецензию на 5 тайтлов", "emoji": "✍️"},
-                {"target": 7, "cur": cnt_rev_total, "name": "Любитель обзоров", "desc": "Написать рецензию на 7 тайтлов", "emoji": "📂"},
-                {"target": 10, "cur": cnt_rev_total, "name": "Аналитик с дивана", "desc": "Написать рецензию на 10 тайтлов", "emoji": "🍿"},
-                {"target": 15, "cur": cnt_rev_total, "name": "Киноблогер", "desc": "Написать рецензию на 15 тайтлов", "emoji": "🤳"},
-                {"target": 20, "cur": cnt_rev_total, "name": "Свободный микрофон", "desc": "Написать рецензию на 20 тайтлов", "emoji": "🎙"},
-                {"target": 25, "cur": cnt_rev_total, "name": "Повелитель текста", "desc": "Написать рецензию на 25 тайтлов", "emoji": "📖"},
-                {"target": 30, "cur": cnt_rev_total, "name": "Голос сообщества", "desc": "Написать рецензию на 30 тайтлов", "emoji": "📣"},
-                {"target": 35, "cur": cnt_rev_total, "name": "Мыслитель", "desc": "Написать рецензию на 35 тайтлов", "emoji": "🧠"},
-                {"target": 40, "cur": cnt_rev_total, "name": "Мастер пера", "desc": "Написать рецензию на 40 тайтлов", "emoji": "🪶"},
-                {"target": 45, "cur": cnt_rev_total, "name": "Главный редактор", "desc": "Написать рецензию на 45 тайтлов", "emoji": "🏢"},
-                {"target": 50, "cur": cnt_rev_total, "name": "Хранитель рецензий", "desc": "Написать рецензию на 50 тайтлов", "emoji": "🏛"},
-                {"target": 55, "cur": cnt_rev_total, "name": "Живая энциклопедия", "desc": "Написать рецензию на 55 тайтлов", "emoji": "🦁"},
-                {"target": 60, "cur": cnt_rev_total, "name": "Абсолютный обозреватель", "desc": "Написать рецензию на 60 тайтлов", "emoji": "👑"}
+                {"target": 5, "cur": cnt_rev_total, "name": "Начинающий автор",
+                 "desc": "Написать рецензию на 5 тайтлов", "emoji": "✍️"},
+                {"target": 7, "cur": cnt_rev_total, "name": "Любитель обзоров",
+                 "desc": "Написать рецензию на 7 тайтлов", "emoji": "📂"},
+                {"target": 10, "cur": cnt_rev_total, "name": "Аналитик с дивана",
+                 "desc": "Написать рецензию на 10 тайтлов", "emoji": "🍿"},
+                {"target": 15, "cur": cnt_rev_total, "name": "Киноблогер", "desc": "Написать рецензию на 15 тайтлов",
+                 "emoji": "🤳"},
+                {"target": 20, "cur": cnt_rev_total, "name": "Свободный микрофон",
+                 "desc": "Написать рецензию на 20 тайтлов", "emoji": "🎙"},
+                {"target": 25, "cur": cnt_rev_total, "name": "Повелитель текста",
+                 "desc": "Написать рецензию на 25 тайтлов", "emoji": "📖"},
+                {"target": 30, "cur": cnt_rev_total, "name": "Голос сообщества",
+                 "desc": "Написать рецензию на 30 тайтлов", "emoji": "📣"},
+                {"target": 35, "cur": cnt_rev_total, "name": "Мыслитель", "desc": "Написать рецензию на 35 тайтлов",
+                 "emoji": "🧠"},
+                {"target": 40, "cur": cnt_rev_total, "name": "Мастер пера", "desc": "Написать рецензию на 40 тайтлов",
+                 "emoji": "🪶"},
+                {"target": 45, "cur": cnt_rev_total, "name": "Главный редактор",
+                 "desc": "Написать рецензию на 45 тайтлов", "emoji": "🏢"},
+                {"target": 50, "cur": cnt_rev_total, "name": "Хранитель рецензий",
+                 "desc": "Написать рецензию на 50 тайтлов", "emoji": "🏛"},
+                {"target": 55, "cur": cnt_rev_total, "name": "Живая энциклопедия",
+                 "desc": "Написать рецензию на 55 тайтлов", "emoji": "🦁"},
+                {"target": 60, "cur": cnt_rev_total, "name": "Абсолютный обозреватель",
+                 "desc": "Написать рецензию на 60 тайтлов", "emoji": "👑"}
             ]
 
             ach_sub_tab1, ach_sub_tab2 = st.tabs(["🎉 Полученные", "🌐 Все ачивки"])
@@ -874,7 +1032,8 @@ if st.session_state.user_role is not None:
 
                 st.markdown("### 🎯 Твой статус фильма")
                 current_status = next((a["status"] for a in actions_list if
-                                       a["username"] == st.session_state.user_role and str(a["movie_id"]) == str(movie["id"])),
+                                       a["username"] == st.session_state.user_role and str(a["movie_id"]) == str(
+                                           movie["id"])),
                                       None)
 
                 col_btn1, col_btn2, col_btn3 = st.columns(3)
@@ -937,7 +1096,8 @@ if st.session_state.user_role is not None:
 
                 for idx, mq in enumerate(movie_quizzes):
                     passed_mq = next((r for r in quiz_results if
-                                      r["username"] == st.session_state.user_role and str(r["quiz_id"]) == str(mq["id"])), None)
+                                      r["username"] == st.session_state.user_role and str(r["quiz_id"]) == str(
+                                          mq["id"])), None)
 
                     st.markdown(f"""
                         <div class="quiz-single-box">
