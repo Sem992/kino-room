@@ -334,11 +334,11 @@ if st.session_state.user_role is not None:
                     rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Топ</span>" if is_rec else ""
 
                     st.markdown(f"""
-                        <div class="movie-card">
+                        <div style="position: relative; border: 1px solid #E0E0E0; border-radius: 12px; padding: 12px; margin-bottom: 10px; background-color: #FFFFFF; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                             {rec_badge}
-                            <img src="{movie['poster_url']}">
-                            <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:18px; text-align:center;">{movie['title']}</h3>
-                            <span style="background-color:#2B2B2B; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold;">{movie['category']}</span>
+                            <img src="{movie['poster_url']}" style="width: 100%; height: 260px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
+                            <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:18px; font-weight: 700;">{movie['title']}</h3>
+                            <span style="background-color:#2B2B2B; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold; display: inline-block;">{movie['category']}</span>
                             {genre_badge}
                             {folder_badge}
                             {badges_html}
