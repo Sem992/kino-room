@@ -553,28 +553,43 @@ if st.session_state.user_role is not None:
             with adm_tab4:
                 st.markdown("#### ✏️ Настройки жанров и папок у существующих фильмов")
                 if not movies_list:
-                    st.info("Каталог пуст.")
+                    st.info("В базе пока нет фильмов.")
                 else:
-                    selected_edit_title = st.selectbox("Выбери фильм для редактирования:",
-                                                       [m["title"] for m in movies_list])
-                    target_movie = next(m for m in movies_list if m["title"] == selected_edit_title)
+                    movie_titles = [m["title"] for m in movies_list]
+                    selected_title = st.selectbox("Выбери фильм для редактирования:", movie_titles)
 
-                    existing_genres = [g.strip() for g in target_movie.get("genre", "").split(",") if g.strip()]
-                    updated_genres = st.multiselect("Жанры фильма:", POPULAR_GENRES,
-                                                    default=[g for g in existing_genres if g in POPULAR_GENRES])
-                    updated_folder = st.text_input("Папка / Франшиза:", value=target_movie.get("folder", ""))
+                    target_movie = next((m for m in movies_list if m["title"] == selected_title), None)
 
-                    if st.button("💾 Сохранить изменения фильма"):
-                        patch_payload = {
-                            "genre": ", ".join(updated_genres),
-                            "folder": updated_folder.strip()
-                        }
-                        requests.patch(f"{SUPABASE_URL}/rest/v1/movies?id=eq.{target_movie['id']}", headers=HEADERS,
-                                       json=patch_payload)
-                        st.cache_data.clear()
-                        st.success(f"Настройки фильма «{target_movie['title']}» успешно обновлены!")
-                        st.rerun()
+                    if target_movie:
+                        with st.form(f"edit_form_{target_movie['id']}"):
+                            # Безопасное извлечение жанров без AttributeError
+                            raw_genre = target_movie.get("genre") or ""
+                            existing_genres = [g.strip() for g in raw_genre.split(",") if g.strip()]
 
+                            # Фильтруем только те жанры, которые есть в POPULAR_GENRES
+                            default_genres = [g for g in existing_genres if g in POPULAR_GENRES]
+
+                            edit_genres = st.multiselect("Жанры:", POPULAR_GENRES, default=default_genres)
+                            edit_folder = st.text_input("Папка / Франшиза:", value=target_movie.get("folder") or "")
+
+                            if st.form_submit_button("Сохранить изменения"):
+                                updated_genres = ", ".join(edit_genres)
+                                updated_folder = edit_folder.strip()
+
+                                try:
+                                    patch_url = f"{SUPABASE_URL}/rest/v1/movies?id=eq.{target_movie['id']}"
+                                    res = requests.patch(
+                                        patch_url,
+                                        headers=HEADERS,
+                                        json={"genre": updated_genres, "folder": updated_folder}
+                                    )
+                                    if res.status_code in [200, 204]:
+                                        st.success(f"Обновлены данные для фильма «{target_movie['title']}»!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Ошибка при обновлении Supabase.")
+                                except Exception as e:
+                                    st.error(f"Не удалось отправить запрос: {e}")
     # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
     elif st.session_state.current_page == "kristina_cinema":
         st.markdown("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>", unsafe_allow_html=True)
