@@ -415,13 +415,13 @@ if st.session_state.user_role is not None:
     with st.sidebar:
         st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**")
         st.write("---")
-    
+
         # 1. Формируем текст пункта меню с бейджем
         if unrated_movies:
             my_space_label = f"👤 Моё пространство 🔴 ({len(unrated_movies)})"
         else:
             my_space_label = "👤 Моё пространство"
-    
+
         # 2. Маппинг: Ключ в коде -> Текст в меню
         mapping = {
             "catalog": "🌐 Общий каталог",
@@ -429,29 +429,35 @@ if st.session_state.user_role is not None:
             "semen_recommend": "🔥 Семён рекомендует",
             "my_space": my_space_label
         }
-    
+
         # Обратный маппинг: Текст в меню -> Ключ в коде
         reverse_mapping = {v: k for k, v in mapping.items()}
-    
+
         page_options = list(mapping.values())
-    
+
         # 3. Определяем, какой пункт должен быть выбран
         current_key = st.session_state.get("nav_page", "catalog")
         current_selection = mapping.get(current_key, "🌐 Общий каталог")
-    
+
         # 4. Вызываем st.radio
         selected_page = st.radio(
             "🧭 Навигация по сайту:",
             page_options,
             index=page_options.index(current_selection)
         )
-    
+
         # 5. Обновляем состояние при клике
         new_nav = reverse_mapping[selected_page]
         if new_nav != st.session_state.nav_page:
             st.session_state.nav_page = new_nav
             if "movie_id" in st.query_params:
                 del st.query_params["movie_id"]
+            st.rerun()
+        # --- КНОПКА ВЫХОДА ИЗ АККАУНТА ---
+        st.write("---")
+        if st.button("🚪 Выйти из аккаунта", use_container_width=True):
+            st.session_state.user_role = None
+            st.session_state.nav_page = "catalog"
             st.rerun()
 
 
