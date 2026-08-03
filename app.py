@@ -360,11 +360,15 @@ if st.session_state.user_role is not None:
                     folder_str = movie.get("folder", "")
                     folder_badge = f"<div style='font-size:11px; color:#E50914; font-weight:bold; margin-top:2px;'>📁 {folder_str}</div>" if folder_str else ""
 
-                    is_rec = movie.get("recommended", False)
-                    rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
+                    # 1. Проверяем, просмотрен ли фильм текущим пользователем
+                    is_watched = str(movie["id"]) in user_watched_ids
+
+                    # 2. Отображаем бейдж только если фильм рекомендован И ещё НЕ просмотрен
+                    is_rec = movie.get("recommended", False) and not is_watched
+                    rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold; z-index:10;'>🔥 Рекомендую</span>" if is_rec else ""
 
                     card_html = textwrap.dedent(f"""
-                        <div class="movie-card">
+                        <div class="movie-card" style="position: relative;">
                             {rec_badge}
                             <img src="{movie['poster_url']}">
                             <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:18px; font-weight: 700;">{movie['title']}</h3>
@@ -374,6 +378,7 @@ if st.session_state.user_role is not None:
                             {badges_html}
                         </div>
                     """).strip()
+
                     st.html(card_html)
 
                     if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}", use_container_width=True):
