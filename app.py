@@ -3,6 +3,7 @@ import json
 import os
 import random
 import requests
+import textwrap
 
 # 1. Настройка страницы
 st.set_page_config(
@@ -168,7 +169,7 @@ else:
     st.session_state.current_page = st.session_state.nav_page
 
 # 2. Кастомный CSS стиль
-st.markdown("""
+st.html("""
     <style>
     .stApp { background-color: #FAFAFA; color: #2B2B2B; }
     [data-testid="stSidebar"] { background-color: #F8F9FA; border-right: 1px solid #E0E0E0; }
@@ -246,7 +247,7 @@ st.markdown("""
         border: 1px solid #28A745; background-color: #F4FBF6;
     }
     </style>
-""", unsafe_allow_html=True)
+""")
 
 # ==========================================
 # 🔐 ЭКРАН ВХОДА
@@ -255,9 +256,8 @@ if st.session_state.user_role is None:
     _, col_center, _ = st.columns([1, 2, 1])
     with col_center:
         st.write("")
-        st.markdown("<h1 style='text-align: center;'>🎬 Кино Room</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #666; font-size: 16px;'>Добро пожаловать. Кто заходит?</p>",
-                    unsafe_allow_html=True)
+        st.html("<h1 style='text-align: center;'>🎬 Кино Room</h1>")
+        st.html("<p style='text-align: center; color: #666; font-size: 16px;'>Добро пожаловать. Кто заходит?</p>")
         st.write("---")
 
         btn_col1, btn_col2 = st.columns(2)
@@ -333,7 +333,7 @@ if st.session_state.user_role is not None:
                     is_rec = movie.get("recommended", False)
                     rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Топ</span>" if is_rec else ""
 
-                    card_html = f"""
+                    card_html = textwrap.dedent(f"""
                         <div class="movie-card">
                             {rec_badge}
                             <img src="{movie['poster_url']}">
@@ -343,8 +343,8 @@ if st.session_state.user_role is not None:
                             {folder_badge}
                             {badges_html}
                         </div>
-                    """
-                    st.markdown(card_html, unsafe_allow_html=True)
+                    """).strip()
+                    st.html(card_html)
 
                     if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}", use_container_width=True):
                         st.query_params["movie_id"] = movie['id']
@@ -384,7 +384,7 @@ if st.session_state.user_role is not None:
 
     # --- SIDEBAR NAV ---
     with st.sidebar:
-        st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**", unsafe_allow_html=True)
+        st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**")
         st.write("---")
 
         page_options = [
@@ -445,15 +445,15 @@ if st.session_state.user_role is not None:
 
     # --- СТРАНИЦА: ОБЩИЙ КАТАЛОГ ---
     if st.session_state.current_page == "catalog":
-        st.markdown("<h1 style='margin-bottom: 0px;'>🌐 Общий каталог</h1>", unsafe_allow_html=True)
+        st.html("<h1 style='margin-bottom: 0px;'>🌐 Общий каталог</h1>")
         st.write("Здесь собрана вся киноколлекция!")
 
-        st.markdown(f"""
+        st.html(f"""
             <div class="stats-box-new">
                 <span style="font-weight: bold; font-size: 15px; color: #2B2B2B;">📊 Прогресс просмотра:</span> 
                 <span style="color: #E50914; font-weight: 800; font-size: 15px; margin-left: 5px;">🎬 Просмотрено {user_watched} из {total_movies} тайтлов</span>
             </div>
-        """, unsafe_allow_html=True)
+        """)
 
         st.subheader("🔍 Фильтры поиска")
         filtered_movies = apply_filters(movies_list)
@@ -463,7 +463,7 @@ if st.session_state.user_role is not None:
 
         if st.session_state.user_role == "Семён":
             st.write("---")
-            st.markdown("### 🛠 Панель Семёна (Управление системой)", unsafe_allow_html=True)
+            st.markdown("### 🛠 Панель Семёна (Управление системой)")
             adm_tab1, adm_tab2, adm_tab3, adm_tab4 = st.tabs(
                 ["🎬 Добавить фильм", "🧠 Создать Квиз", "🔔 Заявки", "✏️ Редактировать фильм"])
 
@@ -504,7 +504,7 @@ if st.session_state.user_role is not None:
                             st.warning("Заполни Название и Описание!")
 
             with adm_tab2:
-                st.markdown("#### Добавить вопрос к фильму", unsafe_allow_html=True)
+                st.markdown("#### Добавить вопрос к фильму")
                 if not movies_list:
                     st.info("Сначала добавь фильмы!")
                 else:
@@ -537,7 +537,7 @@ if st.session_state.user_role is not None:
                             st.warning("Заполни все поля!")
 
             with adm_tab3:
-                st.markdown("#### 📥 Пожелания Кристины", unsafe_allow_html=True)
+                st.markdown("#### 📥 Пожелания Кристины")
                 if not requests_list:
                     st.info("Пока новых заявок нет.")
                 else:
@@ -552,7 +552,7 @@ if st.session_state.user_role is not None:
                                 st.rerun()
 
             with adm_tab4:
-                st.markdown("#### ✏️ Настройки жанров и папок у существующих фильмов", unsafe_allow_html=True)
+                st.markdown("#### ✏️ Настройки жанров и папок у существующих фильмов")
                 if not movies_list:
                     st.info("В базе пока нет фильмов.")
                 else:
@@ -592,11 +592,11 @@ if st.session_state.user_role is not None:
 
     # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
     elif st.session_state.current_page == "kristina_cinema":
-        st.markdown("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>", unsafe_allow_html=True)
+        st.html("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>")
         st.write("Эксклюзивная подборка, составленная специально для Кристины! 💕")
 
         st.write("---")
-        st.markdown("### 🎲 Не знаешь что глянуть?", unsafe_allow_html=True)
+        st.markdown("### 🎲 Не знаешь что глянуть?")
         col_r1, col_r2 = st.columns([1, 2])
         with col_r1:
             random_filter = st.selectbox("Категория рандома:", ["Всё", "Фильм", "Сериал", "Мультфильм"])
@@ -618,7 +618,7 @@ if st.session_state.user_role is not None:
                 st.info("Ты посмотрела вообще всё в этой категории! Семён, пора добавить новинок!")
             else:
                 rm = st.session_state.random_movie
-                st.markdown(f"""
+                st.html(textwrap.dedent(f"""
                     <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; gap: 15px; align-items: center;">
                         <img src="{rm['poster_url']}" style="width: 80px; max-height: 120px; object-fit: cover; border-radius: 4px;">
                         <div>
@@ -626,7 +626,7 @@ if st.session_state.user_role is not None:
                             <p style="margin: 5px 0 0 0; font-size: 14px;"><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
+                """))
                 if st.button(f"🚀 Открыть «{rm['title']}»", key="open_random_btn"):
                     st.query_params["movie_id"] = rm['id']
                     st.rerun()
@@ -641,7 +641,7 @@ if st.session_state.user_role is not None:
 
     # --- РАЗДЕЛ СЕМЁН РЕКОМЕНДУЕТ ---
     elif st.session_state.current_page == "semen_recommend":
-        st.markdown("<h1>🔥 Семён рекомендует</h1>", unsafe_allow_html=True)
+        st.html("<h1>🔥 Семён рекомендует</h1>")
         st.write("Специальный топчик тайтлов, подобранный Сёмой для первоочередного просмотра! 🍿")
         st.write("---")
 
@@ -650,19 +650,19 @@ if st.session_state.user_role is not None:
 
     # --- МОЁ ПРОСТРАНСТВО С АЧИВКАМИ ---
     elif st.session_state.current_page == "my_space":
-        st.markdown(f"<h1>👤 Моё пространство: {st.session_state.user_role}</h1>", unsafe_allow_html=True)
+        st.html(f"<h1>👤 Моё пространство: {st.session_state.user_role}</h1>")
 
-        st.markdown(f"""
+        st.html(f"""
             <div class="stats-box-new">
                 <span style="font-weight: bold; font-size: 15px; color: #2B2B2B;">📊 Твоя личная статистика:</span> 
                 <span style="color: #28A745; font-weight: 800; font-size: 15px; margin-left: 10px;">🎬 Просмотрено: {user_watched}</span>
                 <span style="color: #FFC107; font-weight: 800; font-size: 15px; margin-left: 15px;">📌 Хочу посмотреть: {user_watchlist}</span>
             </div>
-        """, unsafe_allow_html=True)
+        """)
 
         if st.session_state.user_role == "Кристина":
             with st.form("request_movie_form", clear_on_submit=True):
-                st.markdown("#### 💌 Не нашла нужного фильма в каталоге?", unsafe_allow_html=True)
+                st.markdown("#### 💌 Не нашла нужного фильма в каталоге?")
                 req_title = st.text_input("Напиши название фильма/сериала, и Семён добавит его на сайт:")
                 if st.form_submit_button("🚀 Отправить Семёну"):
                     if req_title.strip():
@@ -709,15 +709,15 @@ if st.session_state.user_role is not None:
             else:
                 for ur in valid_reviews:
                     m_title = next((m["title"] for m in movies_list if str(m["id"]) == str(ur["movie_id"])), "Удален")
-                    st.markdown(f"""
+                    st.html(f"""
                         <div class="review-box">
                             <strong>🎬 {m_title}</strong> — <span style="color:#E50914; font-weight:bold;">⭐️ {ur['rating']}/10</span>
                             <p style="margin-top:5px; margin-bottom:0px; font-style: italic;">"{ur['review_text']}"</p>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """)
 
         with tab_achievements:
-            st.markdown("### 🏆 Достижения киномана", unsafe_allow_html=True)
+            st.markdown("### 🏆 Достижения киномана")
 
             watched_movies_objs = [m for m in movies_list if str(m["id"]) in user_watched_ids]
 
@@ -986,12 +986,12 @@ if st.session_state.user_role is not None:
                 for ach in achievements_config:
                     if ach["cur"] >= ach["target"]:
                         earned_any = True
-                        st.markdown(f"""
+                        st.html(f"""
                             <div class="achievement-card earned">
                                 <h4 style="margin:0; color:#28A745;">{ach['emoji']} {ach['name']} <span style="font-size:12px; font-weight:normal;">[ПОЛУЧЕНО]</span></h4>
                                 <p style="margin:5px 0 0 0; font-size:14px; color:#555;">{ach['desc']} (Выполнено: {ach['cur']}/{ach['target']})</p>
                             </div>
-                        """, unsafe_allow_html=True)
+                        """)
                 if not earned_any:
                     st.info("У тебя пока нет полученных ачивок. Время посмотреть первый фильм!")
 
@@ -1001,20 +1001,20 @@ if st.session_state.user_role is not None:
                     progress = min(ach["cur"] / ach["target"], 1.0)
 
                     if is_earned:
-                        st.markdown(f"""
+                        st.html(f"""
                             <div class="achievement-card earned">
                                 <h4 style="margin:0; color:#28A745;">{ach['emoji']} {ach['name']} <span style="font-size:12px; font-weight:normal;">[ПОЛУЧЕНО]</span></h4>
                                 <p style="margin:5px 0 0 0; font-size:14px; color:#555;">{ach['desc']}</p>
                             </div>
-                        """, unsafe_allow_html=True)
+                        """)
                         st.progress(progress)
                     else:
-                        st.markdown(f"""
+                        st.html(f"""
                             <div class="achievement-card">
                                 <h4 style="margin:0; color:#2B2B2B;">{ach['emoji']} {ach['name']}</h4>
                                 <p style="margin:5px 0 0 0; font-size:14px; color:#666;">{ach['desc']} — Прогресс: <b>{ach['cur']}</b> из <b>{ach['target']}</b></p>
                             </div>
-                        """, unsafe_allow_html=True)
+                        """)
                         st.progress(progress)
 
     # --- СТРАНИЦА ПРОСМОТРА КАРТОЧКИ ФИЛЬМА ---
@@ -1027,7 +1027,7 @@ if st.session_state.user_role is not None:
                 st.rerun()
 
             st.write("---")
-            st.markdown(f"<h1>🎬 {movie['title']}</h1>", unsafe_allow_html=True)
+            st.html(f"<h1>🎬 {movie['title']}</h1>")
 
             meta_info = []
             if movie.get("genre"): meta_info.append(f"🎭 Жанр: **{movie['genre']}**")
@@ -1041,11 +1041,11 @@ if st.session_state.user_role is not None:
             with col_view1:
                 st.image(movie['poster_url'], use_container_width=True)
             with col_view2:
-                st.markdown("### 📝 Описание фильма", unsafe_allow_html=True)
+                st.markdown("### 📝 Описание фильма")
                 st.write(movie['description'])
                 st.write("---")
 
-                st.markdown("### 🎯 Твой статус фильма", unsafe_allow_html=True)
+                st.markdown("### 🎯 Твой статус фильма")
                 current_status = next((a["status"] for a in actions_list if
                                        a["username"] == st.session_state.user_role and str(a["movie_id"]) == str(
                                            movie["id"])),
@@ -1074,7 +1074,7 @@ if st.session_state.user_role is not None:
 
                 st.write("---")
                 if movie['trailer_url']:
-                    st.markdown(f"### 🍿 [Смотреть трейлер на YouTube]({movie['trailer_url']})", unsafe_allow_html=True)
+                    st.html(f"### 🍿 <a href='{movie['trailer_url']}' target='_blank'>Смотреть трейлер на YouTube</a>")
                     if "youtube.com" in movie['trailer_url'] or "youtu.be" in movie['trailer_url']:
                         st.video(movie['trailer_url'])
                 else:
@@ -1083,13 +1083,12 @@ if st.session_state.user_role is not None:
             st.write("---")
 
             # --- БЛОК ОТЗЫВОВ И РЕЦЕНЗИЙ ---
-            st.markdown(f"### ✍️ Оставить рецензию на фильм «{movie['title']}»", unsafe_allow_html=True)
+            st.markdown(f"### ✍️ Оставить рецензию на фильм «{movie['title']}»")
 
             rating = st.slider("Выбери оценку на шкале:", min_value=1, max_value=10, value=5)
-            st.markdown(f"## 📈 Твоя оценка: <span style='color:#E50914; font-weight:900;'>⭐️ {rating} / 10</span>",
-                        unsafe_allow_html=True)
+            st.html(f"<h2>📈 Твоя оценка: <span style='color:#E50914; font-weight:900;'>⭐️ {rating} / 10</span></h2>")
 
-            st.markdown("### 🌡️ Вайбометр", unsafe_allow_html=True)
+            st.markdown("### 🌡️ Вайбометр")
             vibe_options = ["🥱 Выдержала до титров", "😢 Поплакала", "🌀 Ничего не поняла, но очень интересно",
                             "🔥 Полный треш", "✨ Вайбик"]
             selected_vibe = st.radio("Какое настроение оставил фильм?", vibe_options, horizontal=True)
@@ -1107,18 +1106,18 @@ if st.session_state.user_role is not None:
             movie_quizzes = [q for q in quizzes_list if str(q["movie_id"]) == str(movie["id"])]
             if movie_quizzes:
                 st.write("---")
-                st.markdown("### 🧠 Мини-тесты от Семёна по этому фильму:", unsafe_allow_html=True)
+                st.markdown("### 🧠 Мини-тесты от Семёна по этому фильму:")
 
                 for idx, mq in enumerate(movie_quizzes):
                     passed_mq = next((r for r in quiz_results if
                                       r["username"] == st.session_state.user_role and str(r["quiz_id"]) == str(
                                           mq["id"])), None)
 
-                    st.markdown(f"""
+                    st.html(f"""
                         <div class="quiz-single-box">
                             <span style="color:#E50914; font-weight:bold;">Вопрос #{idx + 1}:</span> {mq['question']}
                         </div>
-                    """, unsafe_allow_html=True)
+                    """)
 
                     if passed_mq:
                         if passed_mq["is_correct"]:
@@ -1145,7 +1144,7 @@ if st.session_state.user_role is not None:
                                 st.error("Ошибка сохранения ответа!")
 
             st.write("---")
-            st.markdown("### 💬 Рецензии зрителей", unsafe_allow_html=True)
+            st.markdown("### 💬 Рецензии зрителей")
             movie_reviews = [r for r in reviews_list if str(r["movie_id"]) == str(movie["id"])]
 
             if not movie_reviews:
@@ -1153,12 +1152,12 @@ if st.session_state.user_role is not None:
             else:
                 for rev in movie_reviews:
                     vibe_str = f" | Настроение: <b>{rev.get('vibe', '')}</b>" if rev.get('vibe') else ""
-                    st.markdown(f"""
+                    st.html(f"""
                         <div class="review-box">
                             <strong>👤 {rev['username']}</strong> — <span style="color:#E50914; font-weight:bold;">⭐️ {rev['rating']}/10</span> {vibe_str}
                             <p style="margin-top:5px; margin-bottom:0px; color:#444!important;">{rev.get('review_text', '')}</p>
                         </div>
-                    """, unsafe_allow_html=True)
+                    """)
 
 # ==========================================
 # 🛠 ТЕХПОДДЕРЖКА (ФУТЕР)
@@ -1166,7 +1165,7 @@ if st.session_state.user_role is not None:
 st.write("---")
 _, footer_col, _ = st.columns([1, 2, 1])
 with footer_col:
-    st.markdown("""
+    st.html("""
         <div style="text-align: center; color: #777777; font-size: 14px; margin-top: 10px; margin-bottom: 20px;">
             💡 Есть вопросы, пожелания или что-то не работает?<br>
             Пиши боту поддержки: 
@@ -1174,4 +1173,4 @@ with footer_col:
                 @kinoroom132_bot 🚀
             </a>
         </div>
-    """, unsafe_allow_html=True)
+    """)
