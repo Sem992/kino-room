@@ -292,6 +292,21 @@ if st.session_state.user_role is not None:
     requests_list = load_local_requests()
     reviews_list = load_local_reviews()
 
+    # 1. Списки просмотров для текущего пользователя
+    user_watched_ids = [str(a["movie_id"]) for a in actions_list if
+                        a["username"] == st.session_state.user_role and a["status"] == "watched"]
+    user_watchlist_ids = [str(a["movie_id"]) for a in actions_list if
+                          a["username"] == st.session_state.user_role and a["status"] == "watchlist"]
+
+    # 2. Списки просмотренных Кристиной (для фильтрации в разделах)
+    kristina_watched_ids = [str(a["movie_id"]) for a in actions_list if
+                            a["username"] == "Кристина" and a["status"] == "watched"]
+
+    # 3. НАХОДИМ ФИЛЬМЫ, КОТОРЫЕ ТЕКУЩИЙ ПОЛЬЗОВАТЕЛЬ ПРОСМОТРЕЛ, НО ЕЩЕ НЕ ОЦЕНИЛ
+    user_rated_ids = [str(r["movie_id"]) for r in reviews_list if r["username"] == st.session_state.user_role]
+    unrated_watched_ids = [m_id for m_id in user_watched_ids if m_id not in user_rated_ids]
+    unrated_movies = [m for m in movies_list if str(m["id"]) in unrated_watched_ids]
+
     total_movies = len(movies_list)
     user_watched_ids = [str(a["movie_id"]) for a in actions_list if
                         a["username"] == st.session_state.user_role and a["status"] == "watched"]
@@ -317,6 +332,21 @@ if st.session_state.user_role is not None:
                                             a["username"] == "Кристина" and str(a["movie_id"]) == str(movie["id"])),
                                            None)
 
+                    # Проверяем, находится ли фильм в списке неоцененных
+                    is_unrated = str(movie["id"]) in unrated_watched_ids
+
+                    badges_html = "<div style='margin-top:6px; margin-bottom:6px; text-align:center; display:flex; gap:4px; justify-content:center; flex-wrap:wrap;'>"
+                    if semen_status == "watched":
+                        badges_html += "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>🕶 Сёма ✅</span>"
+                    if kristina_status == "watched":
+                        badges_html += "<span style='background-color:#E50914; color:white; padding:2px 6px; border-radius:4px; font-size:11px;'>🍿 Кристина ✅</span>"
+
+                    # Если просмотрено, но нет оценки — добавляем яркую желтую плашку!
+                    if is_unrated:
+                        badges_html += "<span style='background-color:#FFD700; color:#111; font-weight:900; padding:2px 8px; border-radius:4px; font-size:11px; box-shadow:0 0 8px rgba(255,215,0,0.8);'>⭐ БЕЗ ОЦЕНКИ!</span>"
+
+                    badges_html += "</div>"
+
                     badges_html = "<div style='margin-top:6px; margin-bottom:6px; text-align:center;'>"
                     if semen_status == "watched":
                         badges_html += "<span style='background-color:#28A745; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-right:3px;'>🕶 Сёма ✅</span>"
@@ -331,7 +361,7 @@ if st.session_state.user_role is not None:
                     folder_badge = f"<div style='font-size:11px; color:#E50914; font-weight:bold; margin-top:2px;'>📁 {folder_str}</div>" if folder_str else ""
 
                     is_rec = movie.get("recommended", False)
-                    rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Топ</span>" if is_rec else ""
+                    rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Рекомендую</span>" if is_rec else ""
 
                     card_html = textwrap.dedent(f"""
                         <div class="movie-card">
@@ -425,9 +455,9 @@ if st.session_state.user_role is not None:
     def apply_filters(source_list):
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
-            cat_filter = st.multiselect("Тип:", ["Фильм", "Сериал", "Мультфильм"])
+            cat_filter = st.multiselect("Тип:", ["Фильм", "Сериал", "Мультфильм"], placeholder="Выберите варианты")
         with col_f2:
-            genre_filter = st.multiselect("Жанр:", POPULAR_GENRES)
+            genre_filter = st.multiselect("Жанр:", POPULAR_GENRES, placeholder="Выберите варианты")
         with col_f3:
             all_folders = list(set([m.get("folder") for m in source_list if m.get("folder")]))
             folder_filter = st.selectbox("Папка / Франшиза:", ["Все папки"] + all_folders)
@@ -454,6 +484,26 @@ if st.session_state.user_role is not None:
                 <span style="color: #E50914; font-weight: 800; font-size: 15px; margin-left: 5px;">🎬 Просмотрено {user_watched} из {total_movies} тайтлов</span>
             </div>
         """)
+
+        # 🔥 НАПОМИНАНИЕ О НЕОЦЕНЕННЫХ ФИЛЬМАХ
+        if unrated_movies:
+            st.warning(
+                f"🔔 **У тебя есть неоцененные фильмы ({len(unrated_movies)} шт.)!** Поставь оценку и напиши впечатления! 👇")
+
+            cols_unrated = st.columns(min(len(unrated_movies), 3))
+            for idx, un_m in enumerate(unrated_movies[:3]):
+                with cols_unrated[idx % 3]:
+                    st.html(f"""
+                                <div style="background-color: #FFF3CD; border: 2px solid #FFC107; padding: 10px; border-radius: 8px; text-align: center;">
+                                    <b style="color: #856404;">🎬 {un_m['title']}</b>
+                                    <div style="font-size: 12px; color: #856404; margin-top: 4px;">⚠️ Нет оценки</div>
+                                </div>
+                            """)
+                    if st.button(f"⭐ Оценить «{un_m['title']}»", key=f"unrated_banner_{un_m['id']}",
+                                 use_container_width=True):
+                        st.query_params["movie_id"] = un_m['id']
+                        st.rerun()
+            st.write("---")
 
         st.subheader("🔍 Фильтры поиска")
         filtered_movies = apply_filters(movies_list)
@@ -591,62 +641,77 @@ if st.session_state.user_role is not None:
                                     st.error(f"Не удалось отправить запрос: {e}")
 
     # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
-    elif st.session_state.current_page == "kristina_cinema":
-        st.html("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>")
-        st.write("Эксклюзивная подборка, составленная специально для Кристины! 💕")
+        # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
+        elif st.session_state.current_page == "kristina_cinema":
+            st.html("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>")
+            st.write("Эксклюзивная подборка непросмотренных фильмов, составленная специально для Кристины! 💕")
 
-        st.write("---")
-        st.markdown("### 🎲 Не знаешь что глянуть?")
-        col_r1, col_r2 = st.columns([1, 2])
-        with col_r1:
-            random_filter = st.selectbox("Категория рандома:", ["Всё", "Фильм", "Сериал", "Мультфильм"])
-        with col_r2:
-            st.write(" ")
-            if st.button("✨ Сёма, выбери за меня!", use_container_width=True):
-                kk_movies = [m for m in movies_list if m.get("for_kristina", False)]
-                unwatched_movies = [m for m in kk_movies if str(m["id"]) not in user_watched_ids]
-                if random_filter != "Всё":
-                    unwatched_movies = [m for m in unwatched_movies if m.get("category") == random_filter]
+            st.write("---")
+            st.markdown("### 🎲 Не знаешь что глянуть?")
+            col_r1, col_r2 = st.columns([1, 2])
 
-                if unwatched_movies:
-                    st.session_state.random_movie = random.choice(unwatched_movies)
+            # Фильтруем фильмы Кристины, исключая уже просмотренные ЕЮ
+            kristina_movies = [
+                m for m in movies_list
+                if m.get("for_kristina", False) and str(m["id"]) not in kristina_watched_ids
+            ]
+
+            with col_r1:
+                random_filter = st.selectbox("Категория рандома:", ["Всё", "Фильм", "Сериал", "Мультфильм"])
+            with col_r2:
+                st.write(" ")
+                if st.button("✨ Сёма, выбери за меня!", use_container_width=True):
+                    unwatched_movies = kristina_movies
+                    if random_filter != "Всё":
+                        unwatched_movies = [m for m in unwatched_movies if m.get("category") == random_filter]
+
+                    if unwatched_movies:
+                        st.session_state.random_movie = random.choice(unwatched_movies)
+                    else:
+                        st.session_state.random_movie = "empty"
+
+            if st.session_state.random_movie:
+                if st.session_state.random_movie == "empty":
+                    st.info("Ты посмотрела вообще всё в этой категории! Семён, пора добавить новинок!")
                 else:
-                    st.session_state.random_movie = "empty"
-
-        if st.session_state.random_movie:
-            if st.session_state.random_movie == "empty":
-                st.info("Ты посмотрела вообще всё в этой категории! Семён, пора добавить новинок!")
-            else:
-                rm = st.session_state.random_movie
-                st.html(textwrap.dedent(f"""
-                    <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; gap: 15px; align-items: center;">
-                        <img src="{rm['poster_url']}" style="width: 80px; max-height: 120px; object-fit: cover; border-radius: 4px;">
-                        <div>
-                            <h4 style="margin: 0; color: #E50914;">🍿 Идеальный вариант для тебя: «{rm['title']}»</h4>
-                            <p style="margin: 5px 0 0 0; font-size: 14px;"><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>
+                    rm = st.session_state.random_movie
+                    st.html(textwrap.dedent(f"""
+                        <div style="background-color: #FFF; border: 2px solid #E50914; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; gap: 15px; align-items: center;">
+                            <img src="{rm['poster_url']}" style="width: 80px; max-height: 120px; object-fit: cover; border-radius: 4px;">
+                            <div>
+                                <h4 style="margin: 0; color: #E50914;">🍿 Идеальный вариант для тебя: «{rm['title']}»</h4>
+                                <p style="margin: 5px 0 0 0; font-size: 14px;"><b>Категория:</b> {rm['category']} | {rm['description'][:150]}...</p>
+                            </div>
                         </div>
-                    </div>
-                """))
-                if st.button(f"🚀 Открыть «{rm['title']}»", key="open_random_btn"):
-                    st.query_params["movie_id"] = rm['id']
-                    st.rerun()
+                    """))
+                    if st.button(f"🚀 Открыть «{rm['title']}»", key="open_random_btn"):
+                        st.query_params["movie_id"] = rm['id']
+                        st.rerun()
 
-        st.write("---")
-        st.subheader("🔍 Фильтры подборки")
-        kristina_movies = [m for m in movies_list if m.get("for_kristina", False)]
-        filtered_kristina = apply_filters(kristina_movies)
+            st.write("---")
+            st.subheader("🔍 Фильтры подборки")
+            filtered_kristina = apply_filters(kristina_movies)
 
-        st.write("---")
-        render_movie_grid(filtered_kristina)
+            st.write("---")
+            render_movie_grid(filtered_kristina)
 
-    # --- РАЗДЕЛ СЕМЁН РЕКОМЕНДУЕТ ---
-    elif st.session_state.current_page == "semen_recommend":
-        st.html("<h1>🔥 Семён рекомендует</h1>")
-        st.write("Специальный топчик тайтлов, подобранный Сёмой для первоочередного просмотра! 🍿")
-        st.write("---")
+        # --- РАЗДЕЛ СЕМЁН РЕКОМЕНДУЕТ ---
+        elif st.session_state.current_page == "semen_recommend":
+            st.html("<h1>🔥 Семён рекомендует</h1>")
+            st.write("Специальный топчик тайтлов, подобранный Сёмой для первоочередного просмотра! 🍿")
+            st.write("---")
 
-        rec_movies = [m for m in movies_list if m.get("recommended", False)]
-        render_movie_grid(rec_movies)
+            # Оставляем только рекомендованные фильмы, которые Кристина ЕЩЕ НЕ смотрела
+            rec_movies = [
+                m for m in movies_list
+                if m.get("recommended", False) and str(m["id"]) not in kristina_watched_ids
+            ]
+
+            st.subheader("🔍 Фильтры рекомендаций")
+            filtered_rec = apply_filters(rec_movies)
+
+            st.write("---")
+            render_movie_grid(filtered_rec)
 
     # --- МОЁ ПРОСТРАНСТВО С АЧИВКАМИ ---
     elif st.session_state.current_page == "my_space":
