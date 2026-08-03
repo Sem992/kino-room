@@ -640,11 +640,10 @@ if st.session_state.user_role is not None:
                                 except Exception as e:
                                     st.error(f"Не удалось отправить запрос: {e}")
 
-    # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
         # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
         elif st.session_state.current_page == "kristina_cinema":
             st.html("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>")
-            st.write("Эксклюзивная подборка непросмотренных фильмов, составленная специально для Кристины! 💕")
+            st.write("Эксклюзивная подборка непросмотренных фильмов, составленная специально для Кристины! ")
 
             st.write("---")
             st.markdown("### 🎲 Не знаешь что глянуть?")
@@ -712,7 +711,6 @@ if st.session_state.user_role is not None:
 
             st.write("---")
             render_movie_grid(filtered_rec)
-
     # --- МОЁ ПРОСТРАНСТВО С АЧИВКАМИ ---
     elif st.session_state.current_page == "my_space":
         st.html(f"<h1>👤 Моё пространство: {st.session_state.user_role}</h1>")
