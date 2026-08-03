@@ -222,10 +222,10 @@ st.markdown("""
     }
     .movie-card img {
         width: 100%;
-        height: 360px;
+        height: 260px;
         object-fit: cover;
         border-radius: 8px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     .review-box {
@@ -333,17 +333,18 @@ if st.session_state.user_role is not None:
                     is_rec = movie.get("recommended", False)
                     rec_badge = "<span style='position:absolute; top:10px; right:10px; background-color:#E50914; color:white; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:bold;'>🔥 Топ</span>" if is_rec else ""
 
-                    st.markdown(f"""
-                        <div style="position: relative; border: 1px solid #E0E0E0; border-radius: 12px; padding: 12px; margin-bottom: 10px; background-color: #FFFFFF; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    card_html = f"""
+                        <div class="movie-card">
                             {rec_badge}
-                            <img src="{movie['poster_url']}" style="width: 100%; height: 260px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
+                            <img src="{movie['poster_url']}">
                             <h3 style="color:#2B2B2B !important; margin: 5px 0; font-size:18px; font-weight: 700;">{movie['title']}</h3>
                             <span style="background-color:#2B2B2B; color:white; padding:3px 10px; border-radius:4px; font-size:12px; font-weight:bold; display: inline-block;">{movie['category']}</span>
                             {genre_badge}
                             {folder_badge}
                             {badges_html}
                         </div>
-                    """, unsafe_allow_html=True)
+                    """
+                    st.markdown(card_html, unsafe_allow_html=True)
 
                     if st.button(f"Открыть «{movie['title']}»", key=f"id_move_{movie['id']}", use_container_width=True):
                         st.query_params["movie_id"] = movie['id']
@@ -383,7 +384,7 @@ if st.session_state.user_role is not None:
 
     # --- SIDEBAR NAV ---
     with st.sidebar:
-        st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**")
+        st.markdown(f"### 👤 Профиль: **{st.session_state.user_role}**", unsafe_allow_html=True)
         st.write("---")
 
         page_options = [
@@ -462,7 +463,7 @@ if st.session_state.user_role is not None:
 
         if st.session_state.user_role == "Семён":
             st.write("---")
-            st.markdown("### 🛠 Панель Семёна (Управление системой)")
+            st.markdown("### 🛠 Панель Семёна (Управление системой)", unsafe_allow_html=True)
             adm_tab1, adm_tab2, adm_tab3, adm_tab4 = st.tabs(
                 ["🎬 Добавить фильм", "🧠 Создать Квиз", "🔔 Заявки", "✏️ Редактировать фильм"])
 
@@ -503,7 +504,7 @@ if st.session_state.user_role is not None:
                             st.warning("Заполни Название и Описание!")
 
             with adm_tab2:
-                st.markdown("#### Добавить вопрос к фильму")
+                st.markdown("#### Добавить вопрос к фильму", unsafe_allow_html=True)
                 if not movies_list:
                     st.info("Сначала добавь фильмы!")
                 else:
@@ -536,7 +537,7 @@ if st.session_state.user_role is not None:
                             st.warning("Заполни все поля!")
 
             with adm_tab3:
-                st.markdown("#### 📥 Пожелания Кристины")
+                st.markdown("#### 📥 Пожелания Кристины", unsafe_allow_html=True)
                 if not requests_list:
                     st.info("Пока новых заявок нет.")
                 else:
@@ -551,7 +552,7 @@ if st.session_state.user_role is not None:
                                 st.rerun()
 
             with adm_tab4:
-                st.markdown("#### ✏️ Настройки жанров и папок у существующих фильмов")
+                st.markdown("#### ✏️ Настройки жанров и папок у существующих фильмов", unsafe_allow_html=True)
                 if not movies_list:
                     st.info("В базе пока нет фильмов.")
                 else:
@@ -562,11 +563,9 @@ if st.session_state.user_role is not None:
 
                     if target_movie:
                         with st.form(f"edit_form_{target_movie['id']}"):
-                            # Безопасное извлечение жанров без AttributeError
                             raw_genre = target_movie.get("genre") or ""
                             existing_genres = [g.strip() for g in raw_genre.split(",") if g.strip()]
 
-                            # Фильтруем только те жанры, которые есть в POPULAR_GENRES
                             default_genres = [g for g in existing_genres if g in POPULAR_GENRES]
 
                             edit_genres = st.multiselect("Жанры:", POPULAR_GENRES, default=default_genres)
@@ -590,13 +589,14 @@ if st.session_state.user_role is not None:
                                         st.error("Ошибка при обновлении Supabase.")
                                 except Exception as e:
                                     st.error(f"Не удалось отправить запрос: {e}")
+
     # --- СТРАНИЦА: КИНОТЕАТР КРИСТИНЫ ---
     elif st.session_state.current_page == "kristina_cinema":
         st.markdown("<h1 style='margin-bottom: 0px;'>🍿 Кинотеатр Кристины</h1>", unsafe_allow_html=True)
         st.write("Эксклюзивная подборка, составленная специально для Кристины! 💕")
 
         st.write("---")
-        st.markdown("### 🎲 Не знаешь что глянуть?")
+        st.markdown("### 🎲 Не знаешь что глянуть?", unsafe_allow_html=True)
         col_r1, col_r2 = st.columns([1, 2])
         with col_r1:
             random_filter = st.selectbox("Категория рандома:", ["Всё", "Фильм", "Сериал", "Мультфильм"])
@@ -662,7 +662,7 @@ if st.session_state.user_role is not None:
 
         if st.session_state.user_role == "Кристина":
             with st.form("request_movie_form", clear_on_submit=True):
-                st.markdown("#### 💌 Не нашла нужного фильма в каталоге?")
+                st.markdown("#### 💌 Не нашла нужного фильма в каталоге?", unsafe_allow_html=True)
                 req_title = st.text_input("Напиши название фильма/сериала, и Семён добавит его на сайт:")
                 if st.form_submit_button("🚀 Отправить Семёну"):
                     if req_title.strip():
@@ -717,7 +717,7 @@ if st.session_state.user_role is not None:
                     """, unsafe_allow_html=True)
 
         with tab_achievements:
-            st.markdown("### 🏆 Достижения киномана")
+            st.markdown("### 🏆 Достижения киномана", unsafe_allow_html=True)
 
             watched_movies_objs = [m for m in movies_list if str(m["id"]) in user_watched_ids]
 
@@ -1041,11 +1041,11 @@ if st.session_state.user_role is not None:
             with col_view1:
                 st.image(movie['poster_url'], use_container_width=True)
             with col_view2:
-                st.markdown("### 📝 Описание фильма")
+                st.markdown("### 📝 Описание фильма", unsafe_allow_html=True)
                 st.write(movie['description'])
                 st.write("---")
 
-                st.markdown("### 🎯 Твой статус фильма")
+                st.markdown("### 🎯 Твой статус фильма", unsafe_allow_html=True)
                 current_status = next((a["status"] for a in actions_list if
                                        a["username"] == st.session_state.user_role and str(a["movie_id"]) == str(
                                            movie["id"])),
@@ -1074,7 +1074,7 @@ if st.session_state.user_role is not None:
 
                 st.write("---")
                 if movie['trailer_url']:
-                    st.markdown(f"### 🍿 [Смотреть трейлер на YouTube]({movie['trailer_url']})")
+                    st.markdown(f"### 🍿 [Смотреть трейлер на YouTube]({movie['trailer_url']})", unsafe_allow_html=True)
                     if "youtube.com" in movie['trailer_url'] or "youtu.be" in movie['trailer_url']:
                         st.video(movie['trailer_url'])
                 else:
@@ -1083,13 +1083,13 @@ if st.session_state.user_role is not None:
             st.write("---")
 
             # --- БЛОК ОТЗЫВОВ И РЕЦЕНЗИЙ ---
-            st.markdown(f"### ✍️ Оставить рецензию на фильм «{movie['title']}»")
+            st.markdown(f"### ✍️ Оставить рецензию на фильм «{movie['title']}»", unsafe_allow_html=True)
 
             rating = st.slider("Выбери оценку на шкале:", min_value=1, max_value=10, value=5)
             st.markdown(f"## 📈 Твоя оценка: <span style='color:#E50914; font-weight:900;'>⭐️ {rating} / 10</span>",
                         unsafe_allow_html=True)
 
-            st.markdown("### 🌡️ Вайбометр")
+            st.markdown("### 🌡️ Вайбометр", unsafe_allow_html=True)
             vibe_options = ["🥱 Выдержала до титров", "😢 Поплакала", "🌀 Ничего не поняла, но очень интересно",
                             "🔥 Полный треш", "✨ Вайбик"]
             selected_vibe = st.radio("Какое настроение оставил фильм?", vibe_options, horizontal=True)
@@ -1107,7 +1107,7 @@ if st.session_state.user_role is not None:
             movie_quizzes = [q for q in quizzes_list if str(q["movie_id"]) == str(movie["id"])]
             if movie_quizzes:
                 st.write("---")
-                st.markdown("### 🧠 Мини-тесты от Семёна по этому фильму:")
+                st.markdown("### 🧠 Мини-тесты от Семёна по этому фильму:", unsafe_allow_html=True)
 
                 for idx, mq in enumerate(movie_quizzes):
                     passed_mq = next((r for r in quiz_results if
@@ -1145,7 +1145,7 @@ if st.session_state.user_role is not None:
                                 st.error("Ошибка сохранения ответа!")
 
             st.write("---")
-            st.markdown("### 💬 Рецензии зрителей")
+            st.markdown("### 💬 Рецензии зрителей", unsafe_allow_html=True)
             movie_reviews = [r for r in reviews_list if str(r["movie_id"]) == str(movie["id"])]
 
             if not movie_reviews:
